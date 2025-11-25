@@ -1,0 +1,766 @@
+<!DOCTYPE html> 
+<html lang="en-US" xml:lang="en-US" > 
+<head> <title>The Ticket Chief</title> 
+<meta  charset="utf-8" /> 
+<meta name="generator" content="TeX4ht (https://tug.org/tex4ht/)" /> 
+<meta name="viewport" content="width=device-width,initial-scale=1" /> 
+<link rel="stylesheet" type="text/css" href="\aa:CssFile " /> 
+<meta name="src" content="CS2003-C3-ticket-chief.tex"> 
+</head><body 
+>
+<div class="maketitle">University of St Andrews School of Computer Science<br /><br />
+CS2003 — Internet and the Web — 2025/26
+ <br />
+Assignment: W11<br />
+Deadline: 2025-11-26 Credits: 50% of coursework mark (30% of module
+mark)<br />
+MMS is the definitive source for deadline and credit details<br /><br />
+You are expected to have read and understood all the information in
+this specification and any accompanying documents at least a week
+before the deadline. You must contact the lecturer regarding any
+queries well in advance of the deadline. </div>
+<h3 class="likesectionHead"><a 
+ id="x1-1000"></a>Aim / Learning objectives</h3>
+<!--l. 28--><p class="noindent" >The aim of this coursework is to build a ticket purchasing system for Ticket
+Chief, a large company that sells tickets for concerts over the World Wide Web.
+The user (customer) must be able to purchase tickets for their favourite
+musicians and bands. Since many bands are very popular, users are placed in a
+queue. The queue may take some time but eventually, when they are first in the
+queue, they will be able to purchase a ticket. Multiple clients must be able to
+queue at the same time. You are required to create both the client-side and
+server-side components of the system. The client will be developed using
+JavaScript, and the server will be implemented in Java. You are provided with
+the following resources:
+     <ul class="itemize1">
+                                                                     
+
+                                                                     
+     <li class="itemize">
+     <!--l. 42--><p class="noindent" >HTML and CSS files for the front-end, supplied by the design team
+     at Ticket Chief to get you started.
+     </li>
+     <li class="itemize">
+     <!--l. 45--><p class="noindent" >A specification for the initial RESTful API that defines how the client
+     and server should interact. You will have to modify this for later
+     parts of the coursework. The initial version, used in part 1, supports
+     purchasing a ticket single type of ticket for a single event (such as a
+     concert or gig).
+     </li>
+     <li class="itemize">
+     <!--l. 51--><p class="noindent" >A JSON file containing a set of tickets that are on sale, which should
+     be used to populate the server with initial data.</li></ul>
+<!--l. 55--><p class="noindent" >This assignment is split into several parts of increasing complexity. It is essential
+to complete each part in sequence and ensure the solutions to the more
+basic tasks are correct before progressing to advanced tasks. Submit all
+parts as a single ZIP file, with subdirectories for each part that you have
+attempted.
+<!--l. 60--><p class="noindent" >The learning objectives of this coursework are to gain experience with building
+client and server systems in different languages, with implementing an API
+specification, and to better understand a widely-used application-layer protocol
+(HTTP).
+<!--l. 66--><p class="noindent" >
+<h3 class="likesectionHead"><a 
+ id="x1-2000"></a>The Ticket Chief API Specification</h3>
+<!--l. 68--><p class="noindent" >The Ticket Chief API has two URLs: /ticket and /queue. These are used to
+manipulate the two kinds of resouces in the system: tickets and ticket purchase
+requests.
+                                                                     
+
+                                                                     
+<!--l. 72--><p class="noindent" >
+<h4 class="likesubsectionHead"><a 
+ id="x1-3000"></a>Tickets</h4>
+<!--l. 73--><p class="noindent" >/tickets exposes one HTTP method: GET /tickets that retrieves the current
+number of tickets and details about the event.
+<!--l. 75--><p class="noindent" ><span class="paragraphHead"><a 
+ id="x1-4000"></a>Request:</span>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 77--><p class="noindent" >Accept header: application/json
+     </li>
+     <li class="itemize">
+     <!--l. 79--><p class="noindent" >Request body: Empty</li></ul>
+<!--l. 82--><p class="noindent" ><span class="paragraphHead"><a 
+ id="x1-5000"></a>Response:</span>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 84--><p class="noindent" >Content-Type header: application/json
+     </li>
+     <li class="itemize">
+     <!--l. 86--><p class="noindent" >Response body: A JSON object representing the tickets that can be
+     requested.
+          <ul class="itemize2">
+          <li class="itemize">
+          <!--l. 89--><p class="noindent" >count (number): A count of the number of tickets remaining.
+                                                                     
+
+                                                                     
+          </li>
+          <li class="itemize">
+          <!--l. 91--><p class="noindent" >artist (string, max 64 characters): name of the band or
+          musician.
+          </li>
+          <li class="itemize">
+          <!--l. 94--><p class="noindent" >venue (string, max 64 characters): the name of the venue.
+          </li>
+          <li class="itemize">
+          <!--l. 96--><p class="noindent" >datetime (ISO 8601 UTC string): The timestamp for the time
+          and date of the gig. You should use the simplified version of ISO
+          8601 specified in RFC 3339.</li></ul>
+     </li></ul>
+<!--l. 102--><p class="noindent" ><span class="paragraphHead"><a 
+ id="x1-6000"></a>Status codes:</span>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 104--><p class="noindent" >200: Successfully retrieved ticket information.
+     </li>
+     <li class="itemize">
+     <!--l. 106--><p class="noindent" >500: Server error (returns an error message).</li></ul>
+<!--l. 109--><p class="noindent" ><span class="paragraphHead"><a 
+ id="x1-7000"></a>Example Request:</span>
+                                                                     
+
+                                                                     
+<pre class="verbatim" id="verbatim-1">
+
+<span 
+class="cmtt-10x-x-109">GET</span><span 
+class="cmtt-10x-x-109"> /tickets</span><span 
+class="cmtt-10x-x-109"> HTTP/1.1</span>
+<span 
+class="cmtt-10x-x-109">Accept:</span><span 
+class="cmtt-10x-x-109"> application/json</span>
+</pre>
+<!--l. 113--><p class="nopar" >
+<!--l. 115--><p class="noindent" ><span class="paragraphHead"><a 
+ id="x1-8000"></a>Example Response:</span>
+                                                                     
+
+                                                                     
+<pre class="verbatim" id="verbatim-2">
+
+<span 
+class="cmtt-10x-x-109">HTTP/1.1</span><span 
+class="cmtt-10x-x-109"> 200</span><span 
+class="cmtt-10x-x-109"> OK</span>
+<span 
+class="cmtt-10x-x-109">Content-Type:</span><span 
+class="cmtt-10x-x-109"> application/json</span>
+
+<span 
+class="cmtt-10x-x-109">{</span>
+<span 
+class="cmtt-10x-x-109"> </span><span 
+class="cmtt-10x-x-109"> &#x0022;count&#x0022;:</span><span 
+class="cmtt-10x-x-109"> 42,</span>
+<span 
+class="cmtt-10x-x-109"> </span><span 
+class="cmtt-10x-x-109"> &#x0022;artist&#x0022;:</span><span 
+class="cmtt-10x-x-109"> &#x0022;The</span><span 
+class="cmtt-10x-x-109"> Electric</span><span 
+class="cmtt-10x-x-109"> Owls&#x0022;,</span>
+<span 
+class="cmtt-10x-x-109"> </span><span 
+class="cmtt-10x-x-109"> &#x0022;venue&#x0022;:</span><span 
+class="cmtt-10x-x-109"> &#x0022;St</span><span 
+class="cmtt-10x-x-109"> Andrews</span><span 
+class="cmtt-10x-x-109"> Student</span><span 
+class="cmtt-10x-x-109"> Union&#x0022;,</span>
+<span 
+class="cmtt-10x-x-109"> </span><span 
+class="cmtt-10x-x-109"> &#x0022;datetime&#x0022;:</span><span 
+class="cmtt-10x-x-109"> &#x0022;2025-11-22T19:30:00Z&#x0022;</span>
+<span 
+class="cmtt-10x-x-109">}</span>
+</pre>
+<!--l. 126--><p class="nopar" >
+<!--l. 128--><p class="noindent" >
+<h4 class="likesubsectionHead"><a 
+ id="x1-9000"></a>Queue</h4>
+<!--l. 129--><p class="noindent" >/queue exposes two HTTP methods: POST /queue and GET /queue/:id. These
+endpoints manage the queue of ticket purchase requests.
+<!--l. 132--><p class="noindent" >Tickets and request IDs are represented as numbers. A request’s position
+indicates its place in the queue; when position reaches 0, the tickets are
+considered purchased and ticketIds is populated.
+<!--l. 136--><p class="noindent" >
+<h4 class="likesubsectionHead"><a 
+ id="x1-10000"></a>POST /queue</h4>
+<!--l. 137--><p class="noindent" >Create a new ticket purchase request and add it to the queue.
+                                                                     
+
+                                                                     
+<!--l. 139--><p class="noindent" ><span class="paragraphHead"><a 
+ id="x1-11000"></a>Request:</span>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 141--><p class="noindent" >Accept: application/json
+     </li>
+     <li class="itemize">
+     <!--l. 143--><p class="noindent" >Content-Type: application/json
+     </li>
+     <li class="itemize">
+     <!--l. 145--><p class="noindent" >Body (JSON):
+          <ul class="itemize2">
+          <li class="itemize">
+          <!--l. 147--><p class="noindent" >tickets (number, required): The number of tickets requested.</li></ul>
+     </li></ul>
+<!--l. 152--><p class="noindent" ><span class="paragraphHead"><a 
+ id="x1-12000"></a>Response:</span>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 154--><p class="noindent" >Content-Type: application/json
+     </li>
+     <li class="itemize">
+     <!--l. 156--><p class="noindent" >Body (JSON):
+          <ul class="itemize2">
+          <li class="itemize">
+          <!--l. 158--><p class="noindent" >id (number): The unique ID of the newly created ticket purchase
+          request.</li></ul>
+                                                                     
+
+                                                                     
+     </li>
+     <li class="itemize">
+     <!--l. 162--><p class="noindent" >Headers:
+          <ul class="itemize2">
+          <li class="itemize">
+          <!--l. 164--><p class="noindent" >Location: /queue/:id (URL of the created resource)</li></ul>
+     </li></ul>
+<!--l. 168--><p class="noindent" ><span class="paragraphHead"><a 
+ id="x1-13000"></a>Status codes:</span>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 170--><p class="noindent" >201 Created: Request successfully created; returns the id.
+     </li>
+     <li class="itemize">
+     <!--l. 173--><p class="noindent" >200 OK: The request was not created because there are no more
+     tickets available.
+     </li>
+     <li class="itemize">
+     <!--l. 175--><p class="noindent" >400 Bad Request: Invalid request (e.g., missing or invalid fields).
+     </li>
+     <li class="itemize">
+     <!--l. 178--><p class="noindent" >500 Internal Server Error: Server error (returns an error message).</li></ul>
+<!--l. 182--><p class="noindent" ><span class="paragraphHead"><a 
+ id="x1-14000"></a>Example Request:</span>
+                                                                     
+
+                                                                     
+<pre class="verbatim" id="verbatim-3">
+
+<span 
+class="cmtt-10x-x-109">POST</span><span 
+class="cmtt-10x-x-109"> /queue</span><span 
+class="cmtt-10x-x-109"> HTTP/1.1</span>
+<span 
+class="cmtt-10x-x-109">Host:</span><span 
+class="cmtt-10x-x-109"> example.com</span>
+<span 
+class="cmtt-10x-x-109">Accept:</span><span 
+class="cmtt-10x-x-109"> application/json</span>
+<span 
+class="cmtt-10x-x-109">Content-Type:</span><span 
+class="cmtt-10x-x-109"> application/json</span>
+
+<span 
+class="cmtt-10x-x-109">{</span>
+<span 
+class="cmtt-10x-x-109">&#x0022;tickets&#x0022;:</span><span 
+class="cmtt-10x-x-109"> 2</span>
+<span 
+class="cmtt-10x-x-109">}</span>
+</pre>
+<!--l. 192--><p class="nopar" >
+<!--l. 194--><p class="noindent" ><span class="paragraphHead"><a 
+ id="x1-15000"></a>Example Response (201 Created):</span>
+                                                                     
+
+                                                                     
+<pre class="verbatim" id="verbatim-4">
+
+<span 
+class="cmtt-10x-x-109">HTTP/1.1</span><span 
+class="cmtt-10x-x-109"> 201</span><span 
+class="cmtt-10x-x-109"> Created</span>
+<span 
+class="cmtt-10x-x-109">Location:</span><span 
+class="cmtt-10x-x-109"> /queue/57</span>
+<span 
+class="cmtt-10x-x-109">Content-Type:</span><span 
+class="cmtt-10x-x-109"> application/json</span>
+
+<span 
+class="cmtt-10x-x-109">{</span>
+<span 
+class="cmtt-10x-x-109">&#x0022;id&#x0022;:</span><span 
+class="cmtt-10x-x-109"> 57</span>
+<span 
+class="cmtt-10x-x-109">}</span>
+</pre>
+<!--l. 203--><p class="nopar" >
+<!--l. 205--><p class="noindent" >
+<h4 class="likesubsectionHead"><a 
+ id="x1-16000"></a>GET /queue/:id</h4>
+<!--l. 206--><p class="noindent" >Retrieve the full current status of a ticket purchase request.
+<!--l. 208--><p class="noindent" ><span class="paragraphHead"><a 
+ id="x1-17000"></a>Request:</span>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 210--><p class="noindent" >Accept: application/json
+     </li>
+     <li class="itemize">
+     <!--l. 212--><p class="noindent" >Body: Empty</li></ul>
+                                                                     
+
+                                                                     
+<!--l. 215--><p class="noindent" ><span class="paragraphHead"><a 
+ id="x1-18000"></a>Response:</span>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 217--><p class="noindent" >Content-Type: application/json
+     </li>
+     <li class="itemize">
+     <!--l. 219--><p class="noindent" >Body (JSON):
+          <ul class="itemize2">
+          <li class="itemize">
+          <!--l. 221--><p class="noindent" >id (number): The unique ID of the ticket purchase request.
+          </li>
+          <li class="itemize">
+          <!--l. 223--><p class="noindent" >tickets (number): The number of tickets requested.
+          </li>
+          <li class="itemize">
+          <!--l. 225--><p class="noindent" >position (number): The current position of the request in the
+          queue. A value of 0 means the tickets have been purchased.
+          </li>
+          <li class="itemize">
+          <!--l. 228--><p class="noindent" >ticketIds (array of strings): The IDs of the purchased tickets
+          (populated when position is 0; otherwise must be empty).</li></ul>
+     </li></ul>
+<!--l. 233--><p class="noindent" ><span class="paragraphHead"><a 
+ id="x1-19000"></a>Status codes:</span>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 235--><p class="noindent" >200 OK: Successfully retrieved the ticket purchase request.
+                                                                     
+
+                                                                     
+     </li>
+     <li class="itemize">
+     <!--l. 237--><p class="noindent" >404 Not Found: No ticket purchase request with the given id.
+     </li>
+     <li class="itemize">
+     <!--l. 239--><p class="noindent" >500 Internal Server Error: Server error (returns an error message).</li></ul>
+<!--l. 243--><p class="noindent" ><span class="paragraphHead"><a 
+ id="x1-20000"></a>Example Request:</span>
+                                                                     
+
+                                                                     
+<pre class="verbatim" id="verbatim-5">
+
+<span 
+class="cmtt-10x-x-109">GET</span><span 
+class="cmtt-10x-x-109"> /queue/57</span><span 
+class="cmtt-10x-x-109"> HTTP/1.1</span>
+<span 
+class="cmtt-10x-x-109">Accept:</span><span 
+class="cmtt-10x-x-109"> application/json</span>
+</pre>
+<!--l. 247--><p class="nopar" >
+<!--l. 249--><p class="noindent" ><span class="paragraphHead"><a 
+ id="x1-21000"></a>Example Response (200 OK):</span>
+                                                                     
+
+                                                                     
+<pre class="verbatim" id="verbatim-6">
+
+<span 
+class="cmtt-10x-x-109">HTTP/1.1</span><span 
+class="cmtt-10x-x-109"> 200</span><span 
+class="cmtt-10x-x-109"> OK</span>
+<span 
+class="cmtt-10x-x-109">Content-Type:</span><span 
+class="cmtt-10x-x-109"> application/json</span>
+
+<span 
+class="cmtt-10x-x-109">{</span>
+<span 
+class="cmtt-10x-x-109">&#x0022;id&#x0022;:</span><span 
+class="cmtt-10x-x-109"> 57,</span>
+<span 
+class="cmtt-10x-x-109">&#x0022;tickets&#x0022;:</span><span 
+class="cmtt-10x-x-109"> 2,</span>
+<span 
+class="cmtt-10x-x-109">&#x0022;position&#x0022;:</span><span 
+class="cmtt-10x-x-109"> 3,</span>
+<span 
+class="cmtt-10x-x-109">&#x0022;ticketIds&#x0022;:</span><span 
+class="cmtt-10x-x-109"> []</span>
+<span 
+class="cmtt-10x-x-109">}</span>
+</pre>
+<!--l. 260--><p class="nopar" >
+<!--l. 262--><p class="noindent" >
+<h3 class="likesectionHead"><a 
+ id="x1-22000"></a>Requirements</h3>
+<!--l. 264--><p class="noindent" >There are three sets of requirements and you have been provided with starter
+code for each of these. You should submit a separate set of code for each part
+that you are attempting. You can reuse code from Part 1 for Part 2 and Part 3,
+but do not build your implementation of Part 3 on top of Part 2, because the
+requirements are slightly different.
+<!--l. 270--><p class="noindent" >
+<h3 class="likesectionHead"><a 
+ id="x1-23000"></a>Requirements – Part 1</h3>
+                                                                     
+
+                                                                     
+<!--l. 272--><p class="noindent" >
+<h4 class="likesubsectionHead"><a 
+ id="x1-24000"></a>Server Implementation</h4>
+<!--l. 273--><p class="noindent" >
+     <ol  class="enumerate1" >
+<li 
+  class="enumerate" id="x1-24002x1">
+     <!--l. 274--><p class="noindent" >Basic Server: Implement the server in Java. It must run correctly
+     on the CS lab Linux machines.
+     </li>
+<li 
+  class="enumerate" id="x1-24004x2">
+     <!--l. 277--><p class="noindent" >Properties Configuration:   Use   the   provided
+     cs2003-C3.properties file for runtime configuration (e.g., port
+     numbers). Do not hard-code parameters such as port numbers, file
+     paths, or usernames. All configuration values should be read from
+     this file. Markers must be able to run your programs on a different
+     machine without having to edit any code.
+     </li>
+<li 
+  class="enumerate" id="x1-24006x3">
+     <!--l. 284--><p class="noindent" >Serve Public Files: Your server should serve the files provided in
+     the starter/public directory via the endpoint /. The exact location
+     of the files should be specified in the properties file as documentRoot.
+     When an HTTP client visits the endpoint /, it should serve the
+     HTML file index.html in its response. If a client sends a GET request
+     for a file that exists in<br />
+     documentRoot, then the server should serve that file. Otherwise, it
+     should return a 404 Not Found response.
+     </li>
+<li 
+  class="enumerate" id="x1-24008x4">
+     <!--l. 293--><p class="noindent" >Load from Storage: The server should use a provided JSON file
+     to initialise its state at startup. This file contains details about
+     available tickets and the gig (e.g., artist, venue, date/time). You must
+                                                                     
+
+                                                                     
+     implement a helper class (for example, Store) to read this data from
+     disk at startup and make it accessible to the server while running.
+     New ticket purchase requests created during runtime should be stored
+     in memory only; persistence between server restarts is not required.
+     </li>
+<li 
+  class="enumerate" id="x1-24010x5">
+     <!--l. 301--><p class="noindent" >Ticket Endpoints: The server should implement the following endpoints
+     according to the API specification:
+          <ul class="itemize1">
+          <li class="itemize">
+          <!--l. 304--><p class="noindent" >GET /tickets – retrieves the current number of tickets remaining
+          and the gig details.
+          </li>
+          <li class="itemize">
+          <!--l. 307--><p class="noindent" >POST /queue – submits a new ticket purchase request to the
+          queue.
+          </li>
+          <li class="itemize">
+          <!--l. 310--><p class="noindent" >GET /queue/:id – retrieves the current status (position) of a
+          specific ticket purchase request in the queue.</li></ul>
+     </li>
+<li 
+  class="enumerate" id="x1-24012x6">
+     <!--l. 314--><p class="noindent" >Queue Management: The server must maintain an internal FIFO queue
+     of ticket purchase requests. Each new purchase request added via POST
+     /queue should be assigned a unique numeric ID and a queue position. To
+     simulate real-world delays, the server should process each purchase request
+     after a random delay (e.g., between 5-10 seconds). In other words, clients
+     may not necessarily be added to the queue in the order that they
+     arrive, since each client will have a different random delay. When a
+     request is processed, the number of available tickets should decrease
+     accordingly. If there are no tickets remaining, new requests should
+     return a 200 OK status code with an empty body and not create the
+     resource.
+                                                                     
+
+                                                                     
+     </li>
+<li 
+  class="enumerate" id="x1-24014x7">
+     <!--l. 328--><p class="noindent" >Ticket Identifiers: Each successfully processed ticket purchase should
+     be assigned a simple unique identifier (e.g., T-001, T-002, etc.).
+     Clients may later use this identifier to request a refund or check the
+     status of a ticket. Security or authentication is not required for
+     this coursework. The server does not need to remember the ticket
+     identifiers.
+     </li></ol>
+<!--l. 336--><p class="noindent" >
+<h4 class="likesubsectionHead"><a 
+ id="x1-25000"></a>Client Implementation</h4>
+<!--l. 337--><p class="noindent" >
+     <ol  class="enumerate1" >
+<li 
+  class="enumerate" id="x1-25002x1">
+     <!--l. 338--><p class="noindent" >Basic Client: Implement the client using JavaScript, designed to run
+     in the Firefox web browser. You may use the provided HTML, CSS,
+     and JavaScript files. They can be modified as you see fit. These files
+     can be found in the starter/public folder on Studres. files if needed.
+     </li>
+<li 
+  class="enumerate" id="x1-25004x2">
+     <!--l. 343--><p class="noindent" >Client-Server Interaction: When the client loads in the browser,
+     it should retrieve the current available tickets from the server by
+     making a GET /tickets request. The page should display the number
+     of tickets remaining and relevant gig information.
+     </li>
+<li 
+  class="enumerate" id="x1-25006x3">
+                                                                     
+
+                                                                     
+     <!--l. 348--><p class="noindent" >Join the Queue: The client should allow users to purchase tickets
+     by submitting a POST /queue request. The client should then display
+     confirmation that the request has been added to the queue and show
+     the assigned queue ID.
+     </li>
+<li 
+  class="enumerate" id="x1-25008x4">
+     <!--l. 353--><p class="noindent" >Check Queue Position: After joining the queue, the client should
+     periodically poll the server using GET /queue/:id to retrieve the
+     user’s current position in the queue and display it on the page.
+     The position should update dynamically until the request has been
+     processed (the simulated delay should make this visible).
+     </li>
+<li 
+  class="enumerate" id="x1-25010x5">
+     <!--l. 359--><p class="noindent" >Client-Server Separation: It must be possible to run the client
+     on  a  different  machine  from  the  server.  You  should  test  your
+     implementation on the CS lab machines and/or teaching servers to
+     verify that client-server communication functions correctly across
+     machines.
+     </li>
+<li 
+  class="enumerate" id="x1-25012x6">
+     <!--l. 364--><p class="noindent" >Error Handling: The client should handle and display server errors
+     gracefully (e.g., 400 or 500 responses). If a purchase request fails or
+     the queue cannot be retrieved, an appropriate message should be
+     shown to the user.</li></ol>
+<!--l. 370--><p class="noindent" >
+<h3 class="likesectionHead"><a 
+ id="x1-26000"></a>Requirements – Part 2</h3>
+<!--l. 371--><p class="noindent" >
+                                                                     
+
+                                                                     
+     <ol  class="enumerate1" >
+<li 
+  class="enumerate" id="x1-26002x1">
+     <!--l. 372--><p class="noindent" >Cancelling Purchases: Extend the server API and the client to
+     allow users to cancel their ticket purchase requests. A purchase request
+     can be cancelled only if it has not yet been processed (i.e., before
+     tickets are issued). You will need to add a DELETE /queue/{id}
+     endpoint that removes the corresponding request from the queue.
+     The endpoint should use appropriate HTTP status codes and headers
+     consistent with the existing API specification. You will also need to
+     update the client to provide a cancel button for any pending purchase,
+     which sends the appropriate request and updates the displayed queue
+     accordingly. You may need to adjust your queueing delay in order to
+     test this feature appropriately.
+     </li>
+<li 
+  class="enumerate" id="x1-26004x2">
+     <!--l. 384--><p class="noindent" >Refunding Tickets: Extend the server API to allow users to return
+     tickets they have already purchased. This should be done using a<br />
+     POST /tickets/refund endpoint, which accepts a JSON object
+     containing a list of valid ticket IDs. When the request is successful,
+     the number of available tickets should increase by the corresponding
+     amount. The server does not have to validate that the ticket exists (as
+     we are unconcerned with security in this coursework). Refunds can be
+     initiated from the client interface.
+     </li>
+<li 
+  class="enumerate" id="x1-26006x3">
+     <!--l. 392--><p class="noindent" >Multiple Concerts: Extend the data model and server to support
+     multiple concerts. Each concert should have its own artist, venue,
+     date/time, and available ticket count, all specified in the JSON file loaded
+     at startup. The API should be extended to distinguish between concerts.
+     For example:
+          <ul class="itemize1">
+          <li class="itemize">
+          <!--l. 398--><p class="noindent" >GET /tickets/{concert_id} – retrieves ticket information for
+          a specific concert.
+                                                                     
+
+                                                                     
+          </li>
+          <li class="itemize">
+          <!--l. 401--><p class="noindent" >POST /queue/{concert_id} – adds a new purchase request to
+          the queue for the specified concert.
+          </li>
+          <li class="itemize">
+          <!--l. 404--><p class="noindent" >GET /queue/{concert_id}/{id} – retrieves the queue status
+          for a specific purchase request associated with a given concert.</li></ul>
+     </li>
+<li 
+  class="enumerate" id="x1-26008x4">
+     <!--l. 408--><p class="noindent" >Client Extensions: The client should be updated to display multiple
+     concerts. The user should be able to select a concert from a list or
+     dropdown menu, view its available tickets, and join that concert’s
+     queue. Each concert should display its own queue position updates
+     independently.
+     </li></ol>
+<!--l. 415--><p class="noindent" >
+<h3 class="likesectionHead"><a 
+ id="x1-27000"></a>Requirements – Part 3</h3>
+<!--l. 441--><p class="noindent" >For part 3 you will consider (some) security. The aims of security that we covered
+(or will cover, depending on when you read this) in lectures are confidentiality,
+integrity and availability. The use of queues in our Ticket Chief system attempts
+to address availability. But we would also like you to consider the other
+aims.
+<!--l. 448--><p class="noindent" >
+     <ol  class="enumerate1" >
+<li 
+  class="enumerate" id="x1-27002x1">
+                                                                     
+
+                                                                     
+     <!--l. 449--><p class="noindent" >Implementation of one security aim: You should attempt to
+     implement some confidentiality or integrity in the Ticket Chief system.
+     You are permitted to use any standard libraries, but you are not
+     permitted to use TLS, as the aim is to implement security at the
+     application layer. Apart from this, we are not prescriptive about how
+     you attempt this.
+     </li>
+<li 
+  class="enumerate" id="x1-27004x2">
+     <!--l. 456--><p class="noindent" >Considering of another security aim: You should document in
+     your report how you might attempt to achieve the other aim of
+     security. You should also discuss some potential attacks on Ticket
+     Chief that might be prevented by considering the three aims of
+     security.</li></ol>
+<!--l. 469--><p class="noindent" >
+<h3 class="likesectionHead"><a 
+ id="x1-28000"></a>Testing</h3>
+<!--l. 471--><p class="noindent" >You should provide evidence of adequate testing of all attempted requirements.
+You should also test that your programs are robust against unexpected
+input or protocol violations. To do this, you should use the program
+curl which is installed on the CS Linux machines and was introduced in
+exercise classes. You may also consider other testing strategies as you see
+appropriate.
+<!--l. 478--><p class="noindent" >
+<h3 class="likesectionHead"><a 
+ id="x1-29000"></a>Report</h3>
+<!--l. 479--><p class="noindent" >Your report must show evidence of testing, including descriptions of any issues
+you encountered and you attempted to resolve them.
+                                                                     
+
+                                                                     
+<!--l. 482--><p class="noindent" >Your report must use the structure outlined in the report_template directory on
+studres. In particular you should pay attention to how to structure your testing
+section.
+<!--l. 486--><p class="noindent" >
+<h3 class="likesectionHead"><a 
+ id="x1-30000"></a>Hints</h3>
+     <ul class="itemize1">
+     <li class="itemize">
+     <!--l. 488--><p class="noindent" >This is a bigger piece of coursework than the previous two, so allocate
+     appropriate time for this.
+     </li>
+     <li class="itemize">
+     <!--l. 491--><p class="noindent" >We are issuing the specification before everything has been covered in
+     lectures so that you can prepare. But with this in mind, it would be
+     a good idea to attend lectures so that you understand the underlying
+     concepts that you have been asked to implement.
+     </li>
+     <li class="itemize">
+     <!--l. 497--><p class="noindent" >Do not attempt Parts 2 or 3 until you have completed Part 1.
+     </li>
+     <li class="itemize">
+     <!--l. 499--><p class="noindent" >We suggest starting with the server and using curl to simulate the
+     client. Look to the exercise classes and tutorials for examples.
+     </li>
+     <li class="itemize">
+     <!--l. 502--><p class="noindent" >Remember that HTTP is a very simple string-based format. So your
+     server should mainly be reading, parsing and writing strings. Start
+     with a server that can serve a single file (e.g. index.html) with the
+     correct headers.
+                                                                     
+
+                                                                     
+     </li>
+     <li class="itemize">
+     <!--l. 507--><p class="noindent" >Make appropriate use of regular expressions, e.g. for parsing headers.
+     </li>
+     <li class="itemize">
+     <!--l. 509--><p class="noindent" >Look at the FAQ as we will keep this updated.</li></ul>
+<!--l. 512--><p class="noindent" >
+<h3 class="likesectionHead"><a 
+ id="x1-31000"></a>Submission</h3>
+<!--l. 512--><p class="noindent" >A single file containing your code and PDF report in ZIP format must be
+submitted electronically via MMS by the deadline. Submissions in any other
+format will be rejected.
+<!--l. 514--><p class="noindent" >The specific mark descriptors for this piece of coursework are described
+below. Note that there are no extensions; to achieve excellent marks
+you should meet all of the requirements with exceptional clarity and
+demonstrated insight. This includes an excellent report and comprehensive
+testing.
+<!--l. 531--><p class="noindent" >
+<h3 class="likesectionHead"><a 
+ id="x1-32000"></a>Assessment Criteria</h3>
+<!--l. 531--><p class="noindent" >Marking will follow the guidelines given in the school student handbook (see link
+in next section).
+<!--l. 531--><p class="noindent" >Some specific descriptors for this assignment are given below:<br /><br />
+0–6<br />
+A failure to submit any working code or report.<br />
+                                                                     
+
+                                                                     
+<br />
+7–10<br />
+Code and a report fulfilling part 1 of the requirements, but the code
+and/or report is poor quality or does not work, or insufficiently meets the
+requirements.<br /><br />
+11–13<br />
+Working code and a report fulfilling part 1 of the requirements, but poor testing
+or poor quality of code or report.<br /><br />
+14–16<br />
+Good quality code, testing, and a report fulfilling part 1 of the requirements.<br /><br />
+17–18<br />
+Excellent quality code, along with thorough testing and a well-written report
+fulfilling parts 1 and 2 of the requirements.<br /><br />
+19–20<br />
+Excellent quality code, along with thorough testing and a well-written report
+fulfilling all requirements.<br /><br />
+<h3 class="likesectionHead"><a 
+ id="x1-33000"></a>Policies and Guidelines</h3>
+<div class="framedenv" id="shaded-1">
+<!--l. 533--><p class="noindent" >Marking<br />
+See the standard mark descriptors in the School Student Handbook:<br />
+<a 
+href="https://info.cs.st-andrews.ac.uk/student-handbook/learning-teaching/feedback.html#Mark_Descriptors" class="url" >https://info.cs.st-andrews.ac.uk/student-handbook/learning-teaching/feedback.html∖#Mark_Descriptors</a>
+<!--l. 533--><p class="noindent" >Lateness penalty<br />
+The standard penalty for late submission applies (Scheme A: 1 mark per 24-hour
+period, or part thereof):<br />
+<a 
+href="https://info.cs.st-andrews.ac.uk/student-handbook/learning-teaching/assessment.html#lateness-penalties" class="url" >https://info.cs.st-andrews.ac.uk/student-handbook/learning-teaching/assessment.html∖#lateness-penalties</a>
+<!--l. 533--><p class="noindent" >Good academic practice<br />
+The University policy on Good Academic Practice applies:<br />
+<a 
+href="https://www.st-andrews.ac.uk/education/handbook/good-academic-practice/" class="url" >https://www.st-andrews.ac.uk/education/handbook/good-academic-practice/</a>
+</div>
+                                                                     
+
+                                                                     
+<a 
+ id="x1-33000doc"></a>
+ 
+</body> 
+</html>
+                                                                     
+
+

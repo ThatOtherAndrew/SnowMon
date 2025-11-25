@@ -1,0 +1,32 @@
+title: '{{< var module >}} {{< var project >}} — {{< var title >}}'
+date: today
+author:
+  name: '{{< var matriculation_number >}}'
+  affiliation: University of St Andrews
+keywords:
+  - '{{< var module >}}'
+
+project:
+  render:
+    - report.md
+format:
+  typst: default
+
+toc: true
+highlight-style: atom-one
+papersize: a4
+include-in-header:
+  - text: | # figure margins
+      #show figure: set block(above: 1.5em, below: 3em)
+  - text: | # page header
+      #set page(header: context {
+        if counter(page).get().first() == 1 [
+          Tutor: {{< var tutor >}}
+          #h(1fr)
+          {{< var matriculation_number >}}
+        ] else [
+          {{< var module >}} {{< var project >}} — {{< var title >}}
+          #h(1fr)
+          {{< var matriculation_number >}}
+        ]
+      })

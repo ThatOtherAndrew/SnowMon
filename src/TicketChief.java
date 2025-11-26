@@ -17,9 +17,10 @@ public class TicketChief {
         );
 
         try {
-            server.start(8000);
-        } catch (IOException e) {
-            System.err.println("I/O Exception: " + e.getMessage());
+            PropertiesReader properties = new PropertiesReader("cs2003-C3.properties");
+            server.start(properties.getIntProperty("serverPort", 8000));
+        } catch (Exception e) {
+            System.err.printf("Fatal exception: %s: %s%n", e.getClass().getName(), e.getMessage());
         }
     }
 }

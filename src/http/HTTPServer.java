@@ -1,5 +1,7 @@
 package http;
 
+import com.jogamp.common.util.ArrayHashMap;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -29,7 +31,7 @@ public class HTTPServer {
         + "HTTP/1.1$"
     );
 
-    private final Map<Route, Function<Request, Response>> routes = new IdentityHashMap<>();
+    private final Map<Route, Function<Request, Response>> routes = new LinkedHashMap<>();
 
     public void route(String method, String path, Function<Request, Response> handler) {
         this.routes.put(new Route(method, path), handler);

@@ -21,7 +21,7 @@ public class HTTPServer {
         // i'm only gonna handle origin-form because the other forms are silly (for this assignment)
         // again, taking a simplistic view of what uri segments look like because RFC 3986 3.3 is dumb
         // also, screw query params for now
-        + "(?<path>(?:/\\S+)+)"
+        + "(?<path>(?:/[^/]*)+)"
         + "\\s+"
 
         // https://www.rfc-editor.org/rfc/rfc9112.html#name-http-version
@@ -40,7 +40,7 @@ public class HTTPServer {
     }
 
     protected void onRequest(Request request) {
-        System.out.printf("%s %s (%s)", request.method(), request.path(), request.headers());
+        System.out.printf("%s %s %s%n", request.method(), request.path(), request.headers());
     }
 
     protected Response defaultRoute(Request request) {
@@ -50,6 +50,7 @@ public class HTTPServer {
 
     protected Response errorRoute(Exception e) {
         // TODO: more sensible response
+        System.err.printf("Server error when handling request: %s: %s%n", e.getClass().getName(), e.getMessage());
         return new Response(500, Map.of(), "wah 500\n" + e.getMessage());
     }
 
@@ -80,7 +81,10 @@ public class HTTPServer {
 
         // https://www.rfc-editor.org/rfc/rfc9112.html#name-request-line
         Matcher requestLine = REQUEST_LINE.matcher(in.readLine());
-        if (!requestLine.matches()) {} // TODO: handle bad request
+        if (!requestLine.matches()) {
+            // TODO: handle bad request
+            return;
+        }
         String method = requestLine.group("method");
         String path = requestLine.group("path");
 

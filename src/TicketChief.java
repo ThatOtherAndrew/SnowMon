@@ -1,7 +1,6 @@
 import http.HTTPServer;
 import http.Response;
 
-import java.io.IOException;
 import java.util.Map;
 
 public class TicketChief {

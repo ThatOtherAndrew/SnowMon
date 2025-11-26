@@ -42,7 +42,7 @@ public class HTTPServer {
     }
 
     protected void onConnect(Socket socket) {
-        System.out.println("New connection: " + socket.getInetAddress());
+        System.out.println("New connection: " + socket.getInetAddress().getHostName() + ":" + socket.getPort());
     }
 
     protected void onRequest(Request request) {

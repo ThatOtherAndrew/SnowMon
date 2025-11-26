@@ -8,7 +8,7 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public abstract class HTTPServer {
+public class HTTPServer {
     private static final Pattern REQUEST_LINE = Pattern.compile("^"
         // https://www.rfc-editor.org/rfc/rfc9112.html#name-method
         // technically according to RFC 9110 section 5.6.2, tokens can have all sorts of goofy characters in them
@@ -31,8 +31,8 @@ public abstract class HTTPServer {
 
     private final Map<Route, Function<Request, Response>> routes = new IdentityHashMap<>();
 
-    public void addRoute(Route route, Function<Request, Response> handler) {
-        this.routes.put(route, handler);
+    public void route(String method, String path, Function<Request, Response> handler) {
+        this.routes.put(new Route(method, path), handler);
     }
 
     protected void onConnect(Socket socket) {
@@ -43,7 +43,18 @@ public abstract class HTTPServer {
         System.out.printf("%s %s (%s)", request.method(), request.path(), request.headers());
     }
 
+    protected Response defaultRoute(Request request) {
+        // TODO: more sensible response
+        return new Response(404, Map.of(), String.format("wah 404\n%s %s not found", request.method(), request.path()));
+    }
+
+    protected Response errorRoute(Exception e) {
+        // TODO: more sensible response
+        return new Response(500, Map.of(), "wah 500\n" + e.getMessage());
+    }
+
     private Map<String, String> parseHeaders(BufferedReader in) throws IOException {
+        // https://www.rfc-editor.org/rfc/rfc9112.html#name-field-syntax
         Map<String, String> headers = new HashMap<>();
         String line;
         while (!(line = in.readLine().strip()).isEmpty()) {
@@ -53,9 +64,30 @@ public abstract class HTTPServer {
         return headers;
     }
 
-    private void routeRequest(Request request) {
+    private Response routeRequest(Request request) {
         for (Route route : routes.keySet()) {
+            if (route.matches(request)) {
+                return routes.get(route).apply(request);
+            }
         }
+
+        // oops, no matches
+        return defaultRoute(request);
+    }
+
+    private void handleClient(Socket socket, BufferedReader in, BufferedWriter out) throws IOException {
+        onConnect(socket);
+
+        // https://www.rfc-editor.org/rfc/rfc9112.html#name-request-line
+        Matcher requestLine = REQUEST_LINE.matcher(in.readLine());
+        if (!requestLine.matches()) {} // TODO: handle bad request
+        String method = requestLine.group("method");
+        String path = requestLine.group("path");
+
+        Request request = new Request(method, path, parseHeaders(in));
+        onRequest(request);
+        Response response = routeRequest(request);
+        out.write(response.render());
     }
 
     public void start(int port) throws IOException {
@@ -67,16 +99,11 @@ public abstract class HTTPServer {
                     BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                     BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()))
                 ) {
-                    onConnect(socket);
-                    
-                    // https://www.rfc-editor.org/rfc/rfc9112.html#name-request-line
-                    Matcher requestLine = REQUEST_LINE.matcher(in.readLine());
-                    String method = requestLine.group("method");
-                    String path = requestLine.group("path");
-
-                    Request request = new Request(method, path, parseHeaders(in));
-                    onRequest(request);
-                    routeRequest(request);
+                    try {
+                        handleClient(socket, in, out);
+                    } catch (Exception e) {
+                        out.write(errorRoute(e).render());
+                    }
                 }
             }
         }

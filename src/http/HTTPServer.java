@@ -21,7 +21,7 @@ public abstract class HTTPServer {
         // i'm only gonna handle origin-form because the other forms are silly (for this assignment)
         // again, taking a simplistic view of what uri segments look like because RFC 3986 3.3 is dumb
         // also, screw query params for now
-        + "(?<target>(?:/\\S+)+)"
+        + "(?<path>(?:/\\S+)+)"
         + "\\s+"
 
         // https://www.rfc-editor.org/rfc/rfc9112.html#name-http-version
@@ -29,31 +29,54 @@ public abstract class HTTPServer {
         + "HTTP/1.1$"
     );
 
-    private final Map<Route, Function<Route, Response>> routes = new IdentityHashMap<>();
+    private final Map<Route, Function<Request, Response>> routes = new IdentityHashMap<>();
 
-    public void addRoute(Route route, Function<Route, Response> handler) {
+    public void addRoute(Route route, Function<Request, Response> handler) {
         this.routes.put(route, handler);
     }
 
-    private void onConnect(Socket socket) {
+    protected void onConnect(Socket socket) {
         System.out.println("New connection: " + socket.getInetAddress());
     }
 
+    protected void onRequest(Request request) {
+        System.out.printf("%s %s (%s)", request.method(), request.path(), request.headers());
+    }
+
+    private Map<String, String> parseHeaders(BufferedReader in) throws IOException {
+        Map<String, String> headers = new HashMap<>();
+        String line;
+        while (!(line = in.readLine().strip()).isEmpty()) {
+            String[] parts = line.split(":\\s*");
+            headers.put(parts[0], parts[1]);
+        }
+        return headers;
+    }
+
+    private void routeRequest(Request request) {
+        for (Route route : routes.keySet()) {
+        }
+    }
+
     public void start(int port) throws IOException {
-        try (ServerSocket server = new ServerSocket(port);) {
-            while (true) {
+        try (ServerSocket server = new ServerSocket(port)) {
+            while (!server.isClosed()) {
                 try (
                     Socket socket = server.accept();
                     // gosh we sure love java don't we
                     BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                     BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()))
                 ) {
-                    this.onConnect(socket);
+                    onConnect(socket);
                     
                     // https://www.rfc-editor.org/rfc/rfc9112.html#name-request-line
                     Matcher requestLine = REQUEST_LINE.matcher(in.readLine());
                     String method = requestLine.group("method");
-                    String target = requestLine.group("target");
+                    String path = requestLine.group("path");
+
+                    Request request = new Request(method, path, parseHeaders(in));
+                    onRequest(request);
+                    routeRequest(request);
                 }
             }
         }

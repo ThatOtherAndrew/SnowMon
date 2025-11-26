@@ -37,6 +37,10 @@ public class HTTPServer {
         this.routes.put(new Route(method, path), handler);
     }
 
+    protected void onReady(ServerSocket server) {
+        System.out.printf("HTTP server listening on %s:%d%n", server.getInetAddress().getHostAddress(), server.getLocalPort());
+    }
+
     protected void onConnect(Socket socket) {
         System.out.println("New connection: " + socket.getInetAddress());
     }
@@ -98,6 +102,8 @@ public class HTTPServer {
 
     public void start(int port) throws IOException {
         try (ServerSocket server = new ServerSocket(port)) {
+            onReady(server);
+
             while (!server.isClosed()) {
                 try (
                     Socket socket = server.accept();

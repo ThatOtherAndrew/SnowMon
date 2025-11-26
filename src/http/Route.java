@@ -1,45 +1,37 @@
 package http;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class Route {
-    // Match e.g. ":bar" from "/foo/:bar", with just "bar" in $1
-    private static final Pattern ROUTE_PARAMS_PATTERN = Pattern.compile("(?<=/):([^/]+)");
-    // Then turn it into a regex pattern to match it into a named capture group
-    private static final String ROUTE_PARAM_SUBSTITUTION = "(?<$1>[^/]+)";
-
     private final String method;
-    private final Pattern pathPattern;
-    private final List<String> routeParams;
+    private final String[] pathSegments;
 
     public Route(String method, String path) {
         this.method = method;
-
-        String escapedPath = Pattern.quote(path);
-        Matcher paramMatcher = ROUTE_PARAMS_PATTERN.matcher(escapedPath);
-
-        List<String> params = new ArrayList<>();
-        while (paramMatcher.find()) {
-            params.add(paramMatcher.group(1));
-        }
-        this.routeParams = params;
-
-        String regex = paramMatcher.reset().replaceAll(ROUTE_PARAM_SUBSTITUTION);
-        this.pathPattern = Pattern.compile(regex);
+        this.pathSegments = path.split("/", -1);
     }
 
     public boolean matches(Request request) {
-        if (!request.method().equals(this.method)) return false;
+        if (!request.method().equals(method)) return false;
 
-        Matcher matcher = pathPattern.matcher(request.path());
-        if (!matcher.matches()) return false;
+        // compare paths
+        String[] requestPath = request.path().split("/", -1);
+        if (requestPath.length != pathSegments.length) return false;
+
+        Map<String, String> routeParams = new HashMap<>();
+        for (int i = 0; i < pathSegments.length; i++) {
+            if (pathSegments[i].startsWith(":")) {  // route param segment?
+                routeParams.put(pathSegments[i].substring(1), requestPath[i]);
+            } else if (!pathSegments[i].equals(requestPath[i])) {  // segment doesn't match!
+                return false;
+            }
+        }
 
         // at this point the request should match the route
-        for (String param : routeParams) {
-            request.setRouteParam(param, matcher.group(param));
+        for (Map.Entry<String, String> routeParam : routeParams.entrySet()) {
+            request.setRouteParam(routeParam.getKey(), routeParam.getValue());
         }
         return true;
     }

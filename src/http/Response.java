@@ -15,6 +15,39 @@ public record Response(int statusCode, Map<String, String> headers, String body)
         // so a fallback of an empty string will do
     );
 
+    public static Response HttpCatResponse(int statusCode) {
+        // language=AngularHTML
+        String html = """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <title>{code} {message}</title>
+                <style>
+                    body {
+                        background-color: black;
+                        height: 100vh;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                    }
+
+                    img {
+                        max-width: 100%;
+                        max-height: 100%;
+                    }
+                </style>
+            </head>
+            <body>
+                <img src="https://http.cat/{code}" alt="{code} {message}">
+            </body>
+            </html>
+            """
+            .replaceAll("\\{code\\}", String.valueOf(statusCode))
+            .replaceAll("\\{message\\}", STATUS_CODE_MESSAGES.getOrDefault(statusCode, "Response"));
+
+        return new Response(statusCode, Map.of("Content-Type", "text/html"), html);
+    }
+
     public String getStatusMessage() {
         return STATUS_CODE_MESSAGES.getOrDefault(statusCode, "Unknown");
     }

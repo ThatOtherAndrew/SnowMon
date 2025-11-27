@@ -1,6 +1,5 @@
 package http;
 
-import com.jogamp.common.util.ArrayHashMap;
 import utils.ANSI;
 
 import java.io.*;
@@ -9,30 +8,33 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class HTTPServer {
-    private static final Pattern REQUEST_LINE = Pattern.compile("^"
-                                                                // https://www.rfc-editor.org/rfc/rfc9112.html#name-method
-                                                                // technically according to RFC 9110 section 5.6.2, tokens can have all sorts of goofy characters in them
-                                                                // if i was doing this "properly", i'd have to match those
-                                                                // but handling methods such as "PO$T" is stupid so i'll just use `\w+`
-                                                                + "(?<method>\\w+)"
-                                                                + "\\s+"
+    private static final Pattern REQUEST_LINE = Pattern.compile(
+        "^"
+        // https://www.rfc-editor.org/rfc/rfc9112.html#name-method
+        // technically according to RFC 9110 section 5.6.2, tokens can have all sorts of goofy characters in them
+        // if i was doing this "properly", i'd have to match those
+        // but handling methods such as "PO$T" is stupid so i'll just use `\w+`
+        + "(?<method>\\w+)"
+        + "\\s+"
 
-                                                                // https://www.rfc-editor.org/rfc/rfc9112.html#name-request-target
-                                                                // i'm only gonna handle origin-form because the other forms are silly (for this assignment)
-                                                                // again, taking a simplistic view of what uri segments look like because RFC 3986 3.3 is dumb
-                                                                // also, screw query params for now
-                                                                + "(?<path>(?:/[^/]*)+)"
-                                                                + "\\s+"
+        // https://www.rfc-editor.org/rfc/rfc9112.html#name-request-target
+        // i'm only gonna handle origin-form because the other forms are silly (for this assignment)
+        // again, taking a simplistic view of what uri segments look like because RFC 3986 3.3 is dumb
+        // also, screw query params for now
+        + "(?<path>(?:/[^/]*)+)"
+        + "\\s+"
 
-                                                                // https://www.rfc-editor.org/rfc/rfc9112.html#name-http-version
-                                                                // let's be real we are not handling anything outside of HTTP/1.1
-                                                                + "HTTP/1.1$"
+        // https://www.rfc-editor.org/rfc/rfc9112.html#name-http-version
+        // let's be real we are not handling anything outside of HTTP/1.1
+        + "HTTP/1.1$"
     );
 
     private final Map<Route, Function<Request, Response>> routes = new LinkedHashMap<>();
@@ -104,22 +106,21 @@ public class HTTPServer {
         if (Files.isRegularFile(filePath) && Files.isReadable(filePath)) {
             try {
                 String fileContent = Files.readString(filePath);
-                return new Response(200, Map.of(), fileContent);
+                String contentType = Files.probeContentType(filePath); // guess content type
+                return new Response(200, Map.of("Content-Type", contentType), fileContent);
             } catch (IOException e) {
-                String message = String.format("Failed to read requested file: %s: %s", filePath, e.getMessage());
-                System.err.println(message);
-                return new Response(500, Map.of(), message);
+                System.err.printf("Failed to read requested file: %s: %s%n", filePath, e.getMessage());
+                return Response.HttpCatResponse(404);
             }
         }
 
         // fallback 404 response
-        return new Response(404, Map.of(), String.format("wah 404\n%s %s not found", request.method(), request.path()));
+        return Response.HttpCatResponse(404);
     }
 
     protected Response errorRoute(Exception e) {
-        // TODO: more sensible response
         System.err.printf("Server error when handling request: %s: %s%n", e.getClass().getName(), e.getMessage());
-        return new Response(500, Map.of(), "wah 500\n" + e.getMessage());
+        return Response.HttpCatResponse(500);
     }
 
     private Map<String, String> parseHeaders(BufferedReader in) throws IOException {

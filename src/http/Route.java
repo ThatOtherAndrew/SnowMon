@@ -10,14 +10,15 @@ public class Route {
 
     public Route(String method, String path) {
         this.method = method;
-        this.pathSegments = path.split("/", -1);
+        this.pathSegments = path.split("/");
     }
 
     public boolean matches(Request request) {
+        // compare methods
         if (!request.method().equals(method)) return false;
 
         // compare paths
-        String[] requestPath = request.path().split("/", -1);
+        String[] requestPath = request.path().split("/");
         if (requestPath.length != pathSegments.length) return false;
 
         Map<String, String> routeParams = new HashMap<>();

@@ -1,37 +1,38 @@
 package http;
 
+import com.jogamp.common.util.ArrayHashMap;
+import utils.ANSI;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class HTTPServer {
     private static final Pattern REQUEST_LINE = Pattern.compile("^"
-        // https://www.rfc-editor.org/rfc/rfc9112.html#name-method
-        // technically according to RFC 9110 section 5.6.2, tokens can have all sorts of goofy characters in them
-        // if i was doing this "properly", i'd have to match those
-        // but handling methods such as "PO$T" is stupid so i'll just use `\w+`
-        + "(?<method>\\w+)"
-        + "\\s+"
+                                                                // https://www.rfc-editor.org/rfc/rfc9112.html#name-method
+                                                                // technically according to RFC 9110 section 5.6.2, tokens can have all sorts of goofy characters in them
+                                                                // if i was doing this "properly", i'd have to match those
+                                                                // but handling methods such as "PO$T" is stupid so i'll just use `\w+`
+                                                                + "(?<method>\\w+)"
+                                                                + "\\s+"
 
-        // https://www.rfc-editor.org/rfc/rfc9112.html#name-request-target
-        // i'm only gonna handle origin-form because the other forms are silly (for this assignment)
-        // again, taking a simplistic view of what uri segments look like because RFC 3986 3.3 is dumb
-        // also, screw query params for now
-        + "(?<path>(?:/[^/]*)+)"
-        + "\\s+"
+                                                                // https://www.rfc-editor.org/rfc/rfc9112.html#name-request-target
+                                                                // i'm only gonna handle origin-form because the other forms are silly (for this assignment)
+                                                                // again, taking a simplistic view of what uri segments look like because RFC 3986 3.3 is dumb
+                                                                // also, screw query params for now
+                                                                + "(?<path>(?:/[^/]*)+)"
+                                                                + "\\s+"
 
-        // https://www.rfc-editor.org/rfc/rfc9112.html#name-http-version
-        // let's be real we are not handling anything outside of HTTP/1.1
-        + "HTTP/1.1$"
+                                                                // https://www.rfc-editor.org/rfc/rfc9112.html#name-http-version
+                                                                // let's be real we are not handling anything outside of HTTP/1.1
+                                                                + "HTTP/1.1$"
     );
 
     private final Map<Route, Function<Request, Response>> routes = new LinkedHashMap<>();
@@ -49,15 +50,15 @@ public class HTTPServer {
     }
 
     protected void onReady(ServerSocket server) {
-        System.out.printf("HTTP server listening on %s:%d%n", server.getInetAddress().getHostAddress(), server.getLocalPort());
+        System.out.printf(ANSI.PURPLE_BOLD_BRIGHT + "HTTP server listening on %s:%d%n", server.getInetAddress().getHostAddress(), server.getLocalPort());
     }
 
     protected void onConnect(Socket socket) {
-        System.out.println("*** New connection: " + socket.getInetAddress().getHostName() + ":" + socket.getPort());
+        System.out.println(ANSI.CYAN_BOLD_BRIGHT + "*** New connection: " + socket.getInetAddress().getHostName() + ":" + socket.getPort());
     }
 
     protected void onRequest(Request request) {
-        StringBuilder message = new StringBuilder("--> ")
+        StringBuilder message = new StringBuilder(ANSI.YELLOW).append("--> ")
             .append(request.method()).append(" ")
             .append(request.path());
 
@@ -74,7 +75,8 @@ public class HTTPServer {
     }
 
     protected void onResponse(Response response) {
-        StringBuilder message = new StringBuilder("<-- ")
+        String colour = response.statusCode() >= 400 ? ANSI.RED : ANSI.GREEN;
+        StringBuilder message = new StringBuilder(colour).append("<-- ")
             .append(response.statusCode()).append(" ")
             .append(response.getStatusMessage());
 

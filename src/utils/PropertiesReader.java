@@ -1,3 +1,5 @@
+package utils;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -25,7 +27,7 @@ public class PropertiesReader {
 
     public String getStringProperty(String key, String defaultValue) {
         if (!properties.containsKey(key)) {
-            System.out.printf("Key %s not found in properties file, defaulting to %s%n", key, defaultValue);
+            System.err.printf("Key %s not found in properties file, defaulting to %s%n", key, defaultValue);
             return defaultValue;
         }
         return properties.get(key);
@@ -36,7 +38,7 @@ public class PropertiesReader {
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
-            System.out.printf("Key %s is not a valid integer value, defaulting to %d%n", key, defaultValue);
+            System.err.printf("Key %s is not a valid integer value, defaulting to %d%n", key, defaultValue);
             return defaultValue;
         }
     }

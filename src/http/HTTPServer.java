@@ -1,14 +1,14 @@
 package http;
 
-import com.jogamp.common.util.ArrayHashMap;
-
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -53,11 +53,41 @@ public class HTTPServer {
     }
 
     protected void onConnect(Socket socket) {
-        System.out.println("New connection: " + socket.getInetAddress().getHostName() + ":" + socket.getPort());
+        System.out.println("*** New connection: " + socket.getInetAddress().getHostName() + ":" + socket.getPort());
     }
 
     protected void onRequest(Request request) {
-        System.out.printf("%s %s %s%n", request.method(), request.path(), request.headers());
+        StringBuilder message = new StringBuilder("--> ")
+            .append(request.method()).append(" ")
+            .append(request.path());
+
+        int headerCount = request.headers().size();
+        if (headerCount > 0) {
+            message.append(" (").append(headerCount).append(" header");
+            if (headerCount > 1) {
+                message.append("s");
+            }
+            message.append(")");
+        }
+
+        System.out.println(message);
+    }
+
+    protected void onResponse(Response response) {
+        StringBuilder message = new StringBuilder("<-- ")
+            .append(response.statusCode()).append(" ")
+            .append(response.getStatusMessage());
+
+        int bodySize = response.getBodySize();
+        if (bodySize > 0) {
+            message.append(" (").append(response.body().length()).append(" byte");
+            if (bodySize > 1) {
+                message.append("s");
+            }
+            message.append(")");
+        }
+
+        System.out.println(message);
     }
 
     protected Response defaultRoute(Request request) {
@@ -130,6 +160,7 @@ public class HTTPServer {
         Request request = new Request(method, path, parseHeaders(in));
         onRequest(request);
         Response response = routeRequest(request);
+        onResponse(response);
         out.write(response.render());
     }
 

@@ -22,7 +22,7 @@ public class TicketChief {
     }
 
     private static void registerRoutes(HTTPServer server) {
-        server.route("GET", "/:slug", request ->
+        server.route("GET", "/tickets", request ->
             new Response(200, Map.of(),"you went to " + request.getRouteParam("slug"))
         );
     }

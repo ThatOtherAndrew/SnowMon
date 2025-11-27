@@ -5,6 +5,9 @@ import com.jogamp.common.util.ArrayHashMap;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -32,6 +35,14 @@ public class HTTPServer {
     );
 
     private final Map<Route, Function<Request, Response>> routes = new LinkedHashMap<>();
+    private final Path documentRoot;
+
+    public HTTPServer(Path documentRoot) {
+        if (!Files.isDirectory(documentRoot)) {
+            throw new IllegalArgumentException(String.format("Document root directory '%s' not found", documentRoot));
+        }
+        this.documentRoot = documentRoot;
+    }
 
     public void route(String method, String path, Function<Request, Response> handler) {
         this.routes.put(new Route(method, path), handler);
@@ -50,7 +61,26 @@ public class HTTPServer {
     }
 
     protected Response defaultRoute(Request request) {
-        // TODO: more sensible response
+        // redirect root requests to index.html
+        String path = request.path();
+        if (request.path().equals("/")) {
+            path = "/index.html";
+        }
+
+        // try to serve from document root
+        Path filePath = Paths.get(documentRoot.toString(), path);
+        if (Files.isRegularFile(filePath) && Files.isReadable(filePath)) {
+            try {
+                String fileContent = Files.readString(filePath);
+                return new Response(200, Map.of(), fileContent);
+            } catch (IOException e) {
+                String message = String.format("Failed to read requested file: %s: %s", filePath, e.getMessage());
+                System.err.println(message);
+                return new Response(500, Map.of(), message);
+            }
+        }
+
+        // fallback 404 response
         return new Response(404, Map.of(), String.format("wah 404\n%s %s not found", request.method(), request.path()));
     }
 
@@ -74,7 +104,10 @@ public class HTTPServer {
     private Response routeRequest(Request request) {
         for (Route route : routes.keySet()) {
             if (route.matches(request)) {
-                return routes.get(route).apply(request);
+                Response response = routes.get(route).apply(request);
+                if (response != null) {
+                    return response;
+                }
             }
         }
 

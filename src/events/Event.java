@@ -1,6 +1,6 @@
 package events;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,9 +25,9 @@ public class Event {
     private int count;
     private final String artist;
     private final String venue;
-    private final LocalDateTime datetime;
+    private final Instant datetime;
 
-    public Event(int count, String artist, String venue, LocalDateTime datetime) {
+    public Event(int count, String artist, String venue, Instant datetime) {
         this.count = count;
         this.artist = artist;
         this.venue = venue;
@@ -44,7 +44,23 @@ public class Event {
             Integer.parseInt(matcher.group("count")),
             matcher.group("artist"),
             matcher.group("venue"),
-            LocalDateTime.parse(matcher.group("datetime"))
+            // thank you stackoverflow
+            // https://stackoverflow.com/questions/6038136/how-do-i-parse-rfc-3339-datetimes-with-java
+            Instant.parse(matcher.group("datetime"))
+        );
+    }
+
+    public String toJSON() {
+        return String.format(
+            """
+            {
+                "count": %d,
+                "artist": "%s",
+                "venue": "%s",
+                "datetime": "%s"
+            }
+            """.trim(),
+            count, artist, venue, datetime
         );
     }
 
@@ -68,7 +84,7 @@ public class Event {
         return venue;
     }
 
-    public LocalDateTime getDatetime() {
+    public Instant getDatetime() {
         return datetime;
     }
 }

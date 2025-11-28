@@ -27,8 +27,10 @@ public class TicketChief {
         // read tickets.json file (or whatever else the file is named)
         Event event;
         try {
-            // get first event
-            event = Event.fromJSON(Files.readString(eventsPath).split(",")[0]);
+            String[] eventJsonStrings = Files.readString(eventsPath)
+                .replaceAll("^\\s*\\[|]\\s*$", "") // remove outermost array brackets
+                .split("(?<=})\\s*,"); // split into separate objects
+            event = Event.fromJSON(eventJsonStrings[0]); // get first event
         } catch (IOException e) {
             System.err.println("Failed to read tickets.json file: " + e.getMessage());
             return;
@@ -46,8 +48,12 @@ public class TicketChief {
     }
 
     private static void registerRoutes(HTTPServer server, Event event) {
-        server.route("GET", "/events", request ->
-            new Response(200, Map.of(),"you went to " + request.getRouteParam("slug"))
-        );
+        server.route("GET", "/tickets", request -> {
+            if (!"application/json".equals(request.headers().get("Accept"))) {
+                return Response.HttpCatResponse(406);
+            }
+
+            return new Response(200, Map.of("Content-Type", "application/json"), event.toJSON());
+        });
     }
 }

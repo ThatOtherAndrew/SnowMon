@@ -1,0 +1,36 @@
+@host = localhost:8000
+
+### Get home page
+GET {{host}}/
+
+> {%
+    client.test("Status is 200", () => client.assert(response.status === 200));
+    client.test("Content type is HTML", () => client.assert(response.contentType.mimeType === "text/html"));
+%}
+
+### Get event details
+GET {{host}}/tickets
+Accept: application/json
+
+> {%
+    client.test("Status is 200", () => client.assert(response.status === 200));
+    client.test("Content type is JSON", () => client.assert(response.contentType.mimeType === "application/json"));
+
+    const expected = JSON.stringify({
+        "count": 250,
+        "artist": "Radiohead",
+        "venue": "O2 Academy Glasgow",
+        "datetime": "2025-05-14T19:30:00Z"
+    });
+    client.log(expected)
+    client.log(JSON.stringify(response.body))
+    client.test("JSON data is correct", () => client.assert(JSON.stringify(response.body) === expected));
+%}
+
+### Get event details with incorrect Accepts header
+GET {{host}}/tickets
+Accept: text/html
+
+> {%
+    client.test("Status is 406", () => client.assert(response.status === 406));
+%}

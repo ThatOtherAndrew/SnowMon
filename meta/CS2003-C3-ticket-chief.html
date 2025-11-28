@@ -22,8 +22,8 @@ queries well in advance of the deadline. </div>
 <h3 class="likesectionHead"><a 
  id="x1-1000"></a>Aim / Learning objectives</h3>
 <!--l. 28--><p class="noindent" >The aim of this coursework is to build a ticket purchasing system for Ticket
-Chief, a large company that sells tickets for concerts over the World Wide Web.
-The user (customer) must be able to purchase tickets for their favourite
+Chief, a large company that sells events for concerts over the World Wide Web.
+The user (customer) must be able to purchase events for their favourite
 musicians and bands. Since many bands are very popular, users are placed in a
 queue. The queue may take some time but eventually, when they are first in the
 queue, they will be able to purchase a ticket. Multiple clients must be able to
@@ -47,7 +47,7 @@ the following resources:
      concert or gig).
      </li>
      <li class="itemize">
-     <!--l. 51--><p class="noindent" >A JSON file containing a set of tickets that are on sale, which should
+     <!--l. 51--><p class="noindent" >A JSON file containing a set of events that are on sale, which should
      be used to populate the server with initial data.</li></ul>
 <!--l. 55--><p class="noindent" >This assignment is split into several parts of increasing complexity. It is essential
 to complete each part in sequence and ensure the solutions to the more
@@ -62,7 +62,7 @@ specification, and to better understand a widely-used application-layer protocol
 <h3 class="likesectionHead"><a 
  id="x1-2000"></a>The Ticket Chief API Specification</h3>
 <!--l. 68--><p class="noindent" >The Ticket Chief API has two URLs: /ticket and /queue. These are used to
-manipulate the two kinds of resouces in the system: tickets and ticket purchase
+manipulate the two kinds of resouces in the system: events and ticket purchase
 requests.
                                                                      
 
@@ -70,8 +70,8 @@ requests.
 <!--l. 72--><p class="noindent" >
 <h4 class="likesubsectionHead"><a 
  id="x1-3000"></a>Tickets</h4>
-<!--l. 73--><p class="noindent" >/tickets exposes one HTTP method: GET /tickets that retrieves the current
-number of tickets and details about the event.
+<!--l. 73--><p class="noindent" >/events exposes one HTTP method: GET /events that retrieves the current
+number of events and details about the event.
 <!--l. 75--><p class="noindent" ><span class="paragraphHead"><a 
  id="x1-4000"></a>Request:</span>
      <ul class="itemize1">
@@ -87,11 +87,11 @@ number of tickets and details about the event.
      <!--l. 84--><p class="noindent" >Content-Type header: application/json
      </li>
      <li class="itemize">
-     <!--l. 86--><p class="noindent" >Response body: A JSON object representing the tickets that can be
+     <!--l. 86--><p class="noindent" >Response body: A JSON object representing the events that can be
      requested.
           <ul class="itemize2">
           <li class="itemize">
-          <!--l. 89--><p class="noindent" >count (number): A count of the number of tickets remaining.
+          <!--l. 89--><p class="noindent" >count (number): A count of the number of events remaining.
                                                                      
 
                                                                      
@@ -125,7 +125,7 @@ number of tickets and details about the event.
 
 <span 
 class="cmtt-10x-x-109">GET</span><span 
-class="cmtt-10x-x-109"> /tickets</span><span 
+class="cmtt-10x-x-109"> /events</span><span
 class="cmtt-10x-x-109"> HTTP/1.1</span>
 <span 
 class="cmtt-10x-x-109">Accept:</span><span 
@@ -180,7 +180,7 @@ class="cmtt-10x-x-109">}</span>
 <!--l. 129--><p class="noindent" >/queue exposes two HTTP methods: POST /queue and GET /queue/:id. These
 endpoints manage the queue of ticket purchase requests.
 <!--l. 132--><p class="noindent" >Tickets and request IDs are represented as numbers. A request’s position
-indicates its place in the queue; when position reaches 0, the tickets are
+indicates its place in the queue; when position reaches 0, the events are
 considered purchased and ticketIds is populated.
 <!--l. 136--><p class="noindent" >
 <h4 class="likesubsectionHead"><a 
@@ -202,7 +202,7 @@ considered purchased and ticketIds is populated.
      <!--l. 145--><p class="noindent" >Body (JSON):
           <ul class="itemize2">
           <li class="itemize">
-          <!--l. 147--><p class="noindent" >tickets (number, required): The number of tickets requested.</li></ul>
+          <!--l. 147--><p class="noindent" >events (number, required): The number of events requested.</li></ul>
      </li></ul>
 <!--l. 152--><p class="noindent" ><span class="paragraphHead"><a 
  id="x1-12000"></a>Response:</span>
@@ -234,7 +234,7 @@ considered purchased and ticketIds is populated.
      </li>
      <li class="itemize">
      <!--l. 173--><p class="noindent" >200 OK: The request was not created because there are no more
-     tickets available.
+     events available.
      </li>
      <li class="itemize">
      <!--l. 175--><p class="noindent" >400 Bad Request: Invalid request (e.g., missing or invalid fields).
@@ -265,7 +265,7 @@ class="cmtt-10x-x-109"> application/json</span>
 <span 
 class="cmtt-10x-x-109">{</span>
 <span 
-class="cmtt-10x-x-109">&#x0022;tickets&#x0022;:</span><span 
+class="cmtt-10x-x-109">&#x0022;events&#x0022;:</span><span
 class="cmtt-10x-x-109"> 2</span>
 <span 
 class="cmtt-10x-x-109">}</span>
@@ -326,14 +326,14 @@ class="cmtt-10x-x-109">}</span>
           <!--l. 221--><p class="noindent" >id (number): The unique ID of the ticket purchase request.
           </li>
           <li class="itemize">
-          <!--l. 223--><p class="noindent" >tickets (number): The number of tickets requested.
+          <!--l. 223--><p class="noindent" >events (number): The number of events requested.
           </li>
           <li class="itemize">
           <!--l. 225--><p class="noindent" >position (number): The current position of the request in the
-          queue. A value of 0 means the tickets have been purchased.
+          queue. A value of 0 means the events have been purchased.
           </li>
           <li class="itemize">
-          <!--l. 228--><p class="noindent" >ticketIds (array of strings): The IDs of the purchased tickets
+          <!--l. 228--><p class="noindent" >ticketIds (array of strings): The IDs of the purchased events
           (populated when position is 0; otherwise must be empty).</li></ul>
      </li></ul>
 <!--l. 233--><p class="noindent" ><span class="paragraphHead"><a 
@@ -387,7 +387,7 @@ class="cmtt-10x-x-109">{</span>
 class="cmtt-10x-x-109">&#x0022;id&#x0022;:</span><span 
 class="cmtt-10x-x-109"> 57,</span>
 <span 
-class="cmtt-10x-x-109">&#x0022;tickets&#x0022;:</span><span 
+class="cmtt-10x-x-109">&#x0022;events&#x0022;:</span><span
 class="cmtt-10x-x-109"> 2,</span>
 <span 
 class="cmtt-10x-x-109">&#x0022;position&#x0022;:</span><span 
@@ -447,7 +447,7 @@ requirements are slightly different.
   class="enumerate" id="x1-24008x4">
      <!--l. 293--><p class="noindent" >Load from Storage: The server should use a provided JSON file
      to initialise its state at startup. This file contains details about
-     available tickets and the gig (e.g., artist, venue, date/time). You must
+     available events and the gig (e.g., artist, venue, date/time). You must
                                                                      
 
                                                                      
@@ -462,7 +462,7 @@ requirements are slightly different.
      according to the API specification:
           <ul class="itemize1">
           <li class="itemize">
-          <!--l. 304--><p class="noindent" >GET /tickets – retrieves the current number of tickets remaining
+          <!--l. 304--><p class="noindent" >GET /events – retrieves the current number of events remaining
           and the gig details.
           </li>
           <li class="itemize">
@@ -482,8 +482,8 @@ requirements are slightly different.
      after a random delay (e.g., between 5-10 seconds). In other words, clients
      may not necessarily be added to the queue in the order that they
      arrive, since each client will have a different random delay. When a
-     request is processed, the number of available tickets should decrease
-     accordingly. If there are no tickets remaining, new requests should
+     request is processed, the number of available events should decrease
+     accordingly. If there are no events remaining, new requests should
      return a 200 OK status code with an empty body and not create the
      resource.
                                                                      
@@ -514,16 +514,16 @@ requirements are slightly different.
 <li 
   class="enumerate" id="x1-25004x2">
      <!--l. 343--><p class="noindent" >Client-Server Interaction: When the client loads in the browser,
-     it should retrieve the current available tickets from the server by
-     making a GET /tickets request. The page should display the number
-     of tickets remaining and relevant gig information.
+     it should retrieve the current available events from the server by
+     making a GET /events request. The page should display the number
+     of events remaining and relevant gig information.
      </li>
 <li 
   class="enumerate" id="x1-25006x3">
                                                                      
 
                                                                      
-     <!--l. 348--><p class="noindent" >Join the Queue: The client should allow users to purchase tickets
+     <!--l. 348--><p class="noindent" >Join the Queue: The client should allow users to purchase events
      by submitting a POST /queue request. The client should then display
      confirmation that the request has been added to the queue and show
      the assigned queue ID.
@@ -563,7 +563,7 @@ requirements are slightly different.
      <!--l. 372--><p class="noindent" >Cancelling Purchases: Extend the server API and the client to
      allow users to cancel their ticket purchase requests. A purchase request
      can be cancelled only if it has not yet been processed (i.e., before
-     tickets are issued). You will need to add a DELETE /queue/{id}
+     events are issued). You will need to add a DELETE /queue/{id}
      endpoint that removes the corresponding request from the queue.
      The endpoint should use appropriate HTTP status codes and headers
      consistent with the existing API specification. You will also need to
@@ -575,10 +575,10 @@ requirements are slightly different.
 <li 
   class="enumerate" id="x1-26004x2">
      <!--l. 384--><p class="noindent" >Refunding Tickets: Extend the server API to allow users to return
-     tickets they have already purchased. This should be done using a<br />
-     POST /tickets/refund endpoint, which accepts a JSON object
+     events they have already purchased. This should be done using a<br />
+     POST /events/refund endpoint, which accepts a JSON object
      containing a list of valid ticket IDs. When the request is successful,
-     the number of available tickets should increase by the corresponding
+     the number of available events should increase by the corresponding
      amount. The server does not have to validate that the ticket exists (as
      we are unconcerned with security in this coursework). Refunds can be
      initiated from the client interface.
@@ -592,7 +592,7 @@ requirements are slightly different.
      For example:
           <ul class="itemize1">
           <li class="itemize">
-          <!--l. 398--><p class="noindent" >GET /tickets/{concert_id} – retrieves ticket information for
+          <!--l. 398--><p class="noindent" >GET /events/{concert_id} – retrieves ticket information for
           a specific concert.
                                                                      
 
@@ -610,7 +610,7 @@ requirements are slightly different.
   class="enumerate" id="x1-26008x4">
      <!--l. 408--><p class="noindent" >Client Extensions: The client should be updated to display multiple
      concerts. The user should be able to select a concert from a list or
-     dropdown menu, view its available tickets, and join that concert’s
+     dropdown menu, view its available events, and join that concert’s
      queue. Each concert should display its own queue position updates
      independently.
      </li></ol>

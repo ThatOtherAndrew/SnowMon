@@ -2,8 +2,8 @@ package http;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Matcher;
 
+@SuppressWarnings("ClassCanBeRecord")
 public class Route {
     private final String method;
     private final String[] pathSegments;

@@ -1,5 +1,6 @@
 package http;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public record Response(int statusCode, Map<String, String> headers, String body) {
@@ -54,20 +55,19 @@ public record Response(int statusCode, Map<String, String> headers, String body)
         return STATUS_CODE_MESSAGES.getOrDefault(statusCode, "Unknown");
     }
 
-    public int getBodySize() {
-        return body.getBytes().length;
-    }
-
     public String render() {
+        // add Content-Length header based on body
+        Map<String, String> patchedHeaders = new HashMap<>(headers);
+        patchedHeaders.put("Content-Length", String.valueOf(body.getBytes().length));
+
         // https://www.rfc-editor.org/rfc/rfc9112.html#name-status-line
         // http 1.1 is the only real http version, everything else is a conspiracy theory
         // it's now 7:24am and my sleep deprived brain is losing it can you tell
-
         StringBuilder response = new StringBuilder("HTTP/1.1 ")
             .append(statusCode).append(" ").append(getStatusMessage())
             .append("\r\n");  // HTTP spec wants CRLF specifically
 
-        for (Map.Entry<String, String> header : headers.entrySet()) {
+        for (Map.Entry<String, String> header : patchedHeaders.entrySet()) {
             response.append(header.getKey()).append(": ")
                 .append(header.getValue()).append("\r\n");
         }

@@ -4,6 +4,9 @@ const myTickets = [];
 
 async function purchaseTickets(event) {
     event.preventDefault();
+    const button = document.querySelector('.join-queue');
+    button.disabled = true; // disable button to prevent duplicate purchases
+
     const ticketCount = document.getElementById('count').valueAsNumber;
     const response = await fetch('/queue', {
         method: 'POST',
@@ -21,6 +24,8 @@ async function purchaseTickets(event) {
     } else {
         alert(`Sorry, something went wrong. (HTTP ${response.status})`);
     }
+
+    button.disabled = false;
 }
 
 async function watchQueue(location) {

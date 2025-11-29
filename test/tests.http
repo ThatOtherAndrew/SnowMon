@@ -164,39 +164,12 @@ Accept: application/json
     client.test("JSON data is correct", () => client.assert(JSON.stringify(response.body) === expected));
 %}
 
-### Get ticket purchase request status after enqueued
-
-< {%
-    // wait until ticket is definitely on the queue
-    const now = new Date().getTime()
-    const waitUntil = now + 5000 // 5 seconds later
-    while (new Date().getTime() < waitUntil) {
-        // twiddle thumbs and busy-wait
-    }
-%}
-
-GET {{host}}/queue/1
-Accept: application/json
-
-> {%
-    client.test("Status is 200", () => client.assert(response.status === 200));
-    client.test("Content type is JSON", () => client.assert(response.contentType.mimeType === "application/json"));
-
-    const expected = JSON.stringify({
-        "id": 1,
-        "tickets": 3,
-        "position": 1,
-        "ticketIds": []
-    });
-    client.test("JSON data is correct", () => client.assert(JSON.stringify(response.body) === expected));
-%}
-
 ### Get ticket purchase request status after fulfilled
 
 < {%
     // wait until ticket is definitely on the queue
     const now = new Date().getTime()
-    const waitUntil = now + 5000 // 5 seconds later
+    const waitUntil = now + 10000 // 10 seconds later
     while (new Date().getTime() < waitUntil) {
         // twiddle thumbs and busy-wait
     }
@@ -208,11 +181,11 @@ Accept: application/json
 > {%
     client.test("Status is 200", () => client.assert(response.status === 200));
     client.test("Content type is JSON", () => client.assert(response.contentType.mimeType === "application/json"));
-    // noinspection JSUnresolvedReference
+    // noinspection JSIncompatibleTypesComparison
     client.test("JSON data is correct", () => client.assert(
-        response.id === 1
-        && response.tickets === 3
-        && response.position === 0
-        && response.ticketIds.length === 3
+        response.body["id"] === 1
+        && response.body["tickets"] === 3
+        && response.body["position"] === 0
+        && response.body["ticketIds"].length === 3
     ));
 %}

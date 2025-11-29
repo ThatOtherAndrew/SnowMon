@@ -1,6 +1,7 @@
 package events;
 
 import java.time.Instant;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -60,7 +61,7 @@ public class Event {
                 "datetime": "%s"
             }
             """.trim(),
-            ticketCount, artist, venue, datetime
+            getTicketCount(), getArtist(), getVenue(), getDatetime()
         );
     }
 
@@ -68,12 +69,15 @@ public class Event {
         return ticketCount;
     }
 
-    public void refundTickets(int ticketCount) {
-        this.ticketCount += ticketCount;
-    }
-
-    public void sellTickets(int ticketCount) {
+    public List<String> sellTickets(int ticketCount) {
         this.ticketCount -= ticketCount;
+
+        List<String> ticketIds = new ArrayList<>();
+        for (int i = 0; i < ticketCount; i++) {
+            ticketIds.add(UUID.randomUUID().toString());
+        }
+
+        return ticketIds;
     }
 
     public String getArtist() {

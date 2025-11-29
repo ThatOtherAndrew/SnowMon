@@ -3,6 +3,7 @@ package events;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 public class PurchaseManager {
     /**
@@ -57,8 +58,48 @@ public class PurchaseManager {
         }
     }
 
+    private static class PaymentProcessor extends Thread {
+        private final PurchaseManager manager;
+        private final Queue<Integer> queue;
+
+        public PaymentProcessor(PurchaseManager manager, Queue<Integer> queue) {
+            this.manager = manager;
+            this.queue = queue;
+        }
+
+        public void run() {
+            Thread thread = Thread.currentThread();
+            Integer requestId;
+
+            try {
+                while (!thread.isInterrupted()) {
+                    if ((requestId = queue.peek()) == null) {
+                        Thread.onSpinWait();
+                        continue;
+                    }
+
+                    System.out.printf("[%d] Request ID %d is being fulfilled...%n", thread.threadId(), requestId);
+
+                    // wait 4-8 seconds
+                    int delay = ThreadLocalRandom.current().nextInt(4000, 8000);
+                    // ironic that IntelliJ thinks the busywait is here and not the above spinwait
+                    // noinspection BusyWait
+                    Thread.sleep(delay);
+
+                    // ticket time!
+                    requestId = queue.remove();
+                    manager.fulfilPurchase(requestId);
+                    System.out.printf("[%d] Request ID %d completed%n", thread.threadId(), requestId);
+                }
+            } catch (InterruptedException ignored) {}
+        }
+    }
+
     public PurchaseManager(Event event) {
         this.event = event;
+
+        // initialiser payment processor to consume from queue
+        new PaymentProcessor(this, queue).start();
     }
 
     public Event getEvent() {
@@ -75,8 +116,32 @@ public class PurchaseManager {
         return request;
     }
 
-    public String getRequestStatusJson(int requestId) {
+    private void fulfilPurchase(int requestId) {
         PurchaseRequest request = requests.get(requestId);
+        int requested = request.ticketCount();
+        int available = getEvent().getTicketCount();
+        if (requested > available) {
+            // tickets sold out while waiting in the queue!
+            // sell them what's left on a best-effort basis
+            requested = available;
+        }
+
+        // give em their tickets!
+        List<String> ticketIds = getEvent().sellTickets(requested);
+        for (String ticketId : ticketIds) {
+            request.addTicketId(ticketId);
+        }
+
+        // register the purchase
+        purchased.add(requestId);
+    }
+
+    public PurchaseRequest getPurchaseRequest(int requestId) {
+        return requests.get(requestId);
+    }
+
+    public String getRequestStatusJson(int requestId) {
+        PurchaseRequest request = getPurchaseRequest(requestId);
         if (request == null) {
             return null;
         }
@@ -94,18 +159,20 @@ public class PurchaseManager {
 
         return String.format(
             """
-            {
-                "id": %d,
-                "tickets": %d,
-                "position": %d,
-                "ticketIds": [%s]
-            }
-            """.trim(),
+                {
+                    "id": %d,
+                    "tickets": %d,
+                    "position": %d,
+                    "ticketIds": [%s]
+                }
+                """.trim(),
 
             request.id(),
             request.ticketCount(),
             queuePosition,
-            String.join(", ", request.ticketIds())
+            request.ticketIds().stream()
+                .map(s -> "\"" + s + "\"")
+                .collect(Collectors.joining(", "))
         );
     }
 }

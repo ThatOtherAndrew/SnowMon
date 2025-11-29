@@ -123,28 +123,47 @@ public class HTTPServer {
         return Response.HttpCatResponse(500);
     }
 
-    private Map<String, String> parseHeaders(BufferedReader in) throws IOException {
+    private Map<String, String> parseHeaders(BufferedReader in) throws BadRequestException, IOException {
         // https://www.rfc-editor.org/rfc/rfc9112.html#name-field-syntax
         Map<String, String> headers = new HashMap<>();
         String line;
         while (!(line = in.readLine().strip()).isEmpty()) {
-            String[] parts = line.split(":\\s*");
+            String[] parts = line.split(":\\s*", 2);
+            if (parts.length < 2) {
+                throw new BadRequestException("Invalid header line: " + line);
+            }
             headers.put(parts[0], parts[1]);
         }
         return headers;
     }
 
-    private String parseBody(BufferedReader in) throws IOException {
-        // this is a cursed abomination which violates line endings and probably corrupts non-text data
-        // probably good enough for the assignment though
-        StringBuilder body = new StringBuilder();
-        String line;
+    private String parseBody(BufferedReader in, Map<String, String> headers) throws BadRequestException, IOException {
+        // this is a cursed abomination of an implementation but good enough for this coursework
 
-        while ((line = in.readLine()) != null) {
-            body.append(line).append("\n");
+        String contentLengthString =  headers.get("Content-Length");
+        if (contentLengthString == null) {
+            // assume no body content
+            return null;
         }
 
-        return body.toString();
+        int contentLength;
+        try {
+            contentLength = Integer.parseInt(contentLengthString);
+        } catch (NumberFormatException e) {
+            throw new BadRequestException("Invalid Content-Length: " + contentLengthString);
+        }
+
+        char[] buffer = new char[contentLength];
+        int cursor = 0;
+        while (cursor < contentLength) {
+            int read = in.read(buffer);
+            if (read == -1) {
+                throw new IOException("Unexpected end of stream");
+            }
+            cursor += read;
+        }
+
+        return new String(buffer);
     }
 
     private Response routeRequest(Request request) {
@@ -161,21 +180,33 @@ public class HTTPServer {
         return defaultRoute(request);
     }
 
-    private void handleClient(Socket socket, BufferedReader in, BufferedWriter out) throws IOException {
+    private void handleClient(Socket socket, BufferedReader in, BufferedWriter out) throws BadRequestException, IOException {
         onConnect(socket);
+        Response response;
 
-        // https://www.rfc-editor.org/rfc/rfc9112.html#name-request-line
-        Matcher requestLine = REQUEST_LINE_PATTERN.matcher(in.readLine());
-        if (!requestLine.matches()) {
-            // TODO: handle bad request
-            return;
+        try {
+            // parse http request line
+            // https://www.rfc-editor.org/rfc/rfc9112.html#name-request-line
+            Matcher requestLine = REQUEST_LINE_PATTERN.matcher(in.readLine());
+            if (!requestLine.matches()) {
+                throw new BadRequestException("Invalid request line: " + requestLine);
+            }
+            String method = requestLine.group("method");
+            String path = requestLine.group("path");
+
+            // parse headers and body from request
+            Map<String, String> headers = parseHeaders(in);
+            String body = parseBody(in, headers);
+
+            // construct Request object
+            Request request = new Request(method, path, headers, body);
+            onRequest(request);
+            response = routeRequest(request);
+        } catch (BadRequestException e) {
+            // construct bad request response instead
+            response = Response.HttpCatResponse(400);
         }
-        String method = requestLine.group("method");
-        String path = requestLine.group("path");
 
-        Request request = new Request(method, path, parseHeaders(in), parseBody(in));
-        onRequest(request);
-        Response response = routeRequest(request);
         onResponse(response);
         out.write(response.render());
     }

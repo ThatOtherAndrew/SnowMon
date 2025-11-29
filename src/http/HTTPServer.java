@@ -52,44 +52,66 @@ public class HTTPServer {
     }
 
     protected void onReady(ServerSocket server) {
-        System.out.printf(ANSI.PURPLE_BOLD_BRIGHT + "HTTP server listening on %s:%d%n", server.getInetAddress().getHostAddress(), server.getLocalPort());
+        System.out.printf(
+            ANSI.PURPLE_BOLD_BRIGHT + "HTTP server listening on %s:%d%n" + ANSI.RESET,
+            server.getInetAddress().getHostAddress(),
+            server.getLocalPort()
+        );
     }
 
     protected void onConnect(Socket socket) {
-        System.out.println(ANSI.CYAN_BOLD_BRIGHT + "*** New connection: " + socket.getInetAddress().getHostName() + ":" + socket.getPort());
+        System.out.printf(
+            ANSI.CYAN_BOLD_BRIGHT + "*** New connection: %s:%d%n" + ANSI.RESET,
+            socket.getInetAddress().getHostName(),
+            socket.getPort()
+        );
+    }
+
+    private static String buildLogSuffix(Map<String, String> headers, String body) {
+        StringBuilder suffix = new StringBuilder();
+
+        int headerCount = headers.size();
+        if (headerCount > 0) {
+            suffix.append(" (").append(headerCount).append(" header");
+            if (headerCount > 1) {
+                suffix.append("s");
+            }
+            suffix.append(")");
+        }
+
+        int bodySize = body.getBytes().length;
+        if (bodySize > 0) {
+            suffix.append(" [").append(body.length()).append(" byte");
+            if (bodySize > 1) {
+                suffix.append("s");
+            }
+            suffix.append("]");
+        }
+
+        return suffix.toString();
     }
 
     protected void onRequest(Request request) {
-        StringBuilder message = new StringBuilder(ANSI.YELLOW).append("--> ")
-            .append(request.method()).append(" ")
-            .append(request.path());
-
-        int headerCount = request.headers().size();
-        if (headerCount > 0) {
-            message.append(" (").append(headerCount).append(" header");
-            if (headerCount > 1) {
-                message.append("s");
-            }
-            message.append(")");
-        }
+        String message = (
+            ANSI.YELLOW + "--> "
+            + request.method() + " "
+            + request.path()
+            + buildLogSuffix(request.headers(), request.body())
+            + ANSI.RESET
+        );
 
         System.out.println(message);
     }
 
     protected void onResponse(Response response) {
         String colour = response.statusCode() >= 400 ? ANSI.RED : ANSI.GREEN;
-        StringBuilder message = new StringBuilder(colour).append("<-- ")
-            .append(response.statusCode()).append(" ")
-            .append(response.getStatusMessage());
-
-        int bodySize = response.getBodySize();
-        if (bodySize > 0) {
-            message.append(" (").append(response.body().length()).append(" byte");
-            if (bodySize > 1) {
-                message.append("s");
-            }
-            message.append(")");
-        }
+        String message = (
+            colour + "<-- "
+            + response.statusCode() + " "
+            + response.getStatusMessage()
+            + buildLogSuffix(response.headers(), response.body())
+            + ANSI.RESET
+        );
 
         System.out.println(message);
     }

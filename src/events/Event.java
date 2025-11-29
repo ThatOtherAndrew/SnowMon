@@ -22,13 +22,13 @@ public class Event {
         + "\\s*}\\s*"
     );
 
-    private int count;
+    private int ticketCount;
     private final String artist;
     private final String venue;
     private final Instant datetime;
 
-    public Event(int count, String artist, String venue, Instant datetime) {
-        this.count = count;
+    public Event(int ticketCount, String artist, String venue, Instant datetime) {
+        this.ticketCount = ticketCount;
         this.artist = artist;
         this.venue = venue;
         this.datetime = datetime;
@@ -60,20 +60,20 @@ public class Event {
                 "datetime": "%s"
             }
             """.trim(),
-            count, artist, venue, datetime
+            ticketCount, artist, venue, datetime
         );
     }
 
-    public int getCount() {
-        return count;
+    public int getTicketCount() {
+        return ticketCount;
     }
 
-    public void incrementCount(int count) {
-        this.count++;
+    public void refundTickets(int ticketCount) {
+        this.ticketCount += ticketCount;
     }
 
-    public void decrementCount(int count) {
-        this.count--;
+    public void sellTickets(int ticketCount) {
+        this.ticketCount -= ticketCount;
     }
 
     public String getArtist() {

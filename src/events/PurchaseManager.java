@@ -1,11 +1,15 @@
 package events;
 
-import java.sql.Array;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class PurchaseManager {
+    /**
+     * The event for which tickets are being sold.
+     */
+    private final Event event;
+
     /**
      * All purchase requests received by the server, regardless of current state.
      */
@@ -51,6 +55,14 @@ public class PurchaseManager {
             queue.add(requestId);
             System.out.printf("[%d] Request ID %d successfully added to queue%n", thread.threadId(), requestId);
         }
+    }
+
+    public PurchaseManager(Event event) {
+        this.event = event;
+    }
+
+    public Event getEvent() {
+        return event;
     }
 
     public PurchaseRequest requestPurchase(int ticketCount) {

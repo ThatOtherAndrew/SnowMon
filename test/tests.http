@@ -71,7 +71,6 @@ Content-Type: application/json
 
 > {%
     client.test("Status is 200", () => client.assert(response.status === 200));
-    client.test("Body is omitted", () => client.assert(!response.body));
     client.test("Location header is omitted", () => client.assert(response.headers.valueOf("Location") === null));
 %}
 

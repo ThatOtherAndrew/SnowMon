@@ -47,7 +47,7 @@ public class TicketChief {
 
         // init server
         HTTPServer server = new HTTPServer(documentRoot);
-        registerRoutes(server, event, new PurchaseManager());
+        registerRoutes(server, new PurchaseManager(event));
 
         try {
             server.start(port);
@@ -56,14 +56,18 @@ public class TicketChief {
         }
     }
 
-    private static void registerRoutes(HTTPServer server, Event event, PurchaseManager purchaseManager) {
+    private static void registerRoutes(HTTPServer server, PurchaseManager purchaseManager) {
         // GET /tickets
         server.route("GET", "/tickets", request -> {
             if (!"application/json".equals(request.headers().get("Accept"))) {
                 return Response.HttpCatResponse(406); // Not Acceptable
             }
 
-            return new Response(200, Map.of("Content-Type", "application/json"), event.toJSON());
+            return new Response(
+                200,
+                Map.of("Content-Type", "application/json"),
+                purchaseManager.getEvent().toJSON()
+            );
         });
 
         // POST /queue
@@ -78,13 +82,18 @@ public class TicketChief {
 
             Matcher matcher = PURCHASE_JSON_PATTERN.matcher(request.body());
             if (!matcher.find()) { // invalid JSON
-                return Response.HttpCatResponse(400);
+                return Response.HttpCatResponse(400); // Bad Request
             }
             int ticketCount = Integer.parseInt(matcher.group("tickets"));
 
+            // return 200 if not enough tickets available
+            if (ticketCount > purchaseManager.getEvent().getTicketCount()) {
+                return Response.HttpCatResponse(200); // OK (not created)
+            }
+
             int requestId = purchaseManager.requestPurchase(ticketCount).id();
             return new Response(
-                201, // FIXME: currently assumes tickets are always available
+                201,
                 Map.of("Content-Type", "application/json", "Location", "/queue/" + requestId),
                 String.format(
                     """

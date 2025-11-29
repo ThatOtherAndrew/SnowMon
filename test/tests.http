@@ -46,7 +46,7 @@ Accept: application/json
 Content-Type: application/json
 
 {
-  "tickets": 1
+  "tickets": 3
 }
 
 > {%
@@ -60,7 +60,20 @@ Content-Type: application/json
     client.test("JSON data is correct", () => client.assert(JSON.stringify(response.body) === expected));
 %}
 
-### TODO: write tests buying up all tickets
+### Create ticket purchase request with too many tickets
+POST {{host}}/queue
+Accept: application/json
+Content-Type: application/json
+
+{
+  "tickets": 1000
+}
+
+> {%
+    client.test("Status is 200", () => client.assert(response.status === 200));
+    client.test("Body is omitted", () => client.assert(!response.body));
+    client.test("Location header is omitted", () => client.assert(response.headers.valueOf("Location") === null));
+%}
 
 ### Create ticket purchase request with incorrect Accept header
 POST {{host}}/queue
@@ -132,4 +145,75 @@ Content-Type: application/json
 
 > {%
     client.test("Status is 400", () => client.assert(response.status === 400));
+%}
+
+### Get ticket purchase request status before enqueued
+
+GET {{host}}/queue/1
+Accept: application/json
+
+> {%
+    client.test("Status is 200", () => client.assert(response.status === 200));
+    client.test("Content type is JSON", () => client.assert(response.contentType.mimeType === "application/json"));
+
+    const expected = JSON.stringify({
+        "id": 1,
+        "tickets": 3,
+        "position": -1,
+        "ticketIds": []
+    });
+    client.test("JSON data is correct", () => client.assert(JSON.stringify(response.body) === expected));
+%}
+
+### Get ticket purchase request status after enqueued
+
+< {%
+    // wait until ticket is definitely on the queue
+    const now = new Date().getTime()
+    const waitUntil = now + 5000 // 5 seconds later
+    while (new Date().getTime() < waitUntil) {
+        // twiddle thumbs and busy-wait
+    }
+%}
+
+GET {{host}}/queue/1
+Accept: application/json
+
+> {%
+    client.test("Status is 200", () => client.assert(response.status === 200));
+    client.test("Content type is JSON", () => client.assert(response.contentType.mimeType === "application/json"));
+
+    const expected = JSON.stringify({
+        "id": 1,
+        "tickets": 3,
+        "position": 1,
+        "ticketIds": []
+    });
+    client.test("JSON data is correct", () => client.assert(JSON.stringify(response.body) === expected));
+%}
+
+### Get ticket purchase request status after fulfilled
+
+< {%
+    // wait until ticket is definitely on the queue
+    const now = new Date().getTime()
+    const waitUntil = now + 5000 // 5 seconds later
+    while (new Date().getTime() < waitUntil) {
+        // twiddle thumbs and busy-wait
+    }
+%}
+
+GET {{host}}/queue/1
+Accept: application/json
+
+> {%
+    client.test("Status is 200", () => client.assert(response.status === 200));
+    client.test("Content type is JSON", () => client.assert(response.contentType.mimeType === "application/json"));
+    // noinspection JSUnresolvedReference
+    client.test("JSON data is correct", () => client.assert(
+        response.id === 1
+        && response.tickets === 3
+        && response.position === 0
+        && response.ticketIds.length === 3
+    ));
 %}

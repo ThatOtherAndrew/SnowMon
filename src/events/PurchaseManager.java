@@ -1,5 +1,6 @@
 package events;
 
+import java.sql.Array;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
@@ -24,16 +25,6 @@ public class PurchaseManager {
      * Last issued purchase request ID (for autoincrement).
      */
     private int lastRequestId = 0;
-
-    public PurchaseRequest requestPurchase(int ticketCount) {
-        PurchaseRequest request = new PurchaseRequest(++lastRequestId, ticketCount);
-        requests.put(request.id(), request);
-
-        // Spawn thread to add to queue after random delay
-        new RequestEnqueuer(queue, request.id()).start();
-
-        return request;
-    }
 
     private static class RequestEnqueuer extends Thread {
         private final Queue<Integer> queue;
@@ -60,5 +51,49 @@ public class PurchaseManager {
             queue.add(requestId);
             System.out.printf("[%d] Request ID %d successfully added to queue%n", thread.threadId(), requestId);
         }
+    }
+
+    public PurchaseRequest requestPurchase(int ticketCount) {
+        PurchaseRequest request = new PurchaseRequest(++lastRequestId, ticketCount);
+        requests.put(request.id(), request);
+
+        // Spawn thread to add to queue after random delay
+        new RequestEnqueuer(queue, request.id()).start();
+
+        return request;
+    }
+
+    public String getRequestStatusJson(int requestId) {
+        PurchaseRequest request = requests.get(requestId);
+        if (request == null) {
+            return null;
+        }
+
+        int queuePosition = -1;
+        if (purchased.contains(request.id())) {
+            queuePosition = 0; // already fulfilled!
+        } else {
+            int index = new ArrayList<>(queue).indexOf(request.id());
+            if (index >= 0) {
+                // adding 1 so that "first in the queue" doesn't clash with "completed"
+                queuePosition = index + 1;
+            }
+        }
+
+        return String.format(
+            """
+            {
+                "id": %d,
+                "tickets": %d,
+                "position": %d,
+                "ticketIds": [%s]
+            }
+            """.trim(),
+
+            request.id(),
+            request.ticketCount(),
+            queuePosition,
+            String.join(", ", request.ticketIds())
+        );
     }
 }

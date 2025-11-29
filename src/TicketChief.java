@@ -56,7 +56,8 @@ public class TicketChief {
         }
     }
 
-    private static void registerRoutes(HTTPServer server, Event event, PurchaseManager queue) {
+    private static void registerRoutes(HTTPServer server, Event event, PurchaseManager purchaseManager) {
+        // GET /tickets
         server.route("GET", "/tickets", request -> {
             if (!"application/json".equals(request.headers().get("Accept"))) {
                 return Response.HttpCatResponse(406); // Not Acceptable
@@ -65,6 +66,7 @@ public class TicketChief {
             return new Response(200, Map.of("Content-Type", "application/json"), event.toJSON());
         });
 
+        // POST /queue
         server.route("POST", "/queue", request -> {
             if (!"application/json".equals(request.headers().get("Accept"))) {
                 return Response.HttpCatResponse(406); // Not Acceptable
@@ -80,33 +82,40 @@ public class TicketChief {
             }
             int ticketCount = Integer.parseInt(matcher.group("tickets"));
 
-            int requestId = queue.requestPurchase(ticketCount).id();
+            int requestId = purchaseManager.requestPurchase(ticketCount).id();
             return new Response(
                 201, // FIXME: currently assumes tickets are always available
                 Map.of("Content-Type", "application/json", "Location", "/queue/" + requestId),
-                String.format("""
+                String.format(
+                    """
                     {
                         "id": %d
                     }
-                    """.trim(), requestId)
+                    """.trim(),
+                    requestId
+                )
             );
         });
 
+        // GET /queue/:id
         server.route("GET", "/queue/:id", request -> {
             if (!"application/json".equals(request.headers().get("Accept"))) {
-                return Response.HttpCatResponse(406);
+                return Response.HttpCatResponse(406); // Not Acceptable
             }
 
             int id;
             try {
                 id = Integer.parseInt(request.getRouteParam("id"));
             } catch (NumberFormatException e) {
-                // cascade invalid route as if resource not found
-                return null;
+                return Response.HttpCatResponse(404); // Tread non-numeric IDs as unknown / not found
             }
 
-            // TODO: all this stuff down here
-            return null;
+            String requestStatus = purchaseManager.getRequestStatusJson(id);
+            if (requestStatus == null) {
+                return Response.HttpCatResponse(404); // Not Found
+            }
+
+            return new Response(200, Map.of("Content-Type", "application/json"), requestStatus);
         });
     }
 }

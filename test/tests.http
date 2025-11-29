@@ -22,15 +22,114 @@ Accept: application/json
         "venue": "O2 Academy Glasgow",
         "datetime": "2025-05-14T19:30:00Z"
     });
-    client.log(expected)
-    client.log(JSON.stringify(response.body))
     client.test("JSON data is correct", () => client.assert(JSON.stringify(response.body) === expected));
 %}
 
-### Get event details with incorrect Accepts header
+### Get event details with incorrect Accept header
 GET {{host}}/tickets
 Accept: text/html
 
 > {%
     client.test("Status is 406", () => client.assert(response.status === 406));
+%}
+
+### Get event details with missing Accept header
+GET {{host}}/tickets
+
+> {%
+    client.test("Status is 406", () => client.assert(response.status === 406));
+%}
+
+### Create ticket purchase request
+POST {{host}}/queue
+Accept: application/json
+Content-Type: application/json
+
+{
+  "tickets": 1
+}
+
+> {%
+    const expectedId = 1;
+
+    client.test("Status is 201", () => client.assert(response.status === 201));
+    client.test("Content type is JSON", () => client.assert(response.contentType.mimeType === "application/json"));
+    client.test("Location header is correct", () => client.assert(response.headers.valueOf("Location") === `/queue/${expectedId}`));
+
+    const expected = JSON.stringify({"id": expectedId});
+    client.test("JSON data is correct", () => client.assert(JSON.stringify(response.body) === expected));
+%}
+
+### TODO: write tests buying up all tickets
+
+### Create ticket purchase request with incorrect Accept header
+POST {{host}}/queue
+Accept: application/pdf
+Content-Type: application/json
+
+{
+  "tickets": 1
+}
+
+> {%
+    client.test("Status is 406", () => client.assert(response.status === 406));
+%}
+
+### Create ticket purchase request with missing Accept header
+POST {{host}}/queue
+Content-Type: application/json
+
+{
+  "tickets": 1
+}
+
+> {%
+    client.test("Status is 406", () => client.assert(response.status === 406));
+%}
+
+### Create ticket purchase request with incorrect Content-Type header
+POST {{host}}/queue
+Accept: application/json
+Content-Type: text/plain
+
+{
+  "tickets": 1
+}
+
+> {%
+    client.test("Status is 415", () => client.assert(response.status === 415));
+%}
+
+### Create ticket purchase request with missing Content-Type header
+POST {{host}}/queue
+Accept: application/json
+
+{
+  "tickets": 1
+}
+
+> {%
+    client.test("Status is 415", () => client.assert(response.status === 415));
+%}
+
+### Create ticket purchase request with missing body
+POST {{host}}/queue
+Accept: application/json
+Content-Type: application/json
+
+> {%
+    client.test("Status is 400", () => client.assert(response.status === 400));
+%}
+
+### Create ticket purchase request with malformed body
+POST {{host}}/queue
+Accept: application/json
+Content-Type: application/json
+
+{
+  "foo": "bar"
+}
+
+> {%
+    client.test("Status is 400", () => client.assert(response.status === 400));
 %}

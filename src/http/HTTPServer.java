@@ -129,7 +129,7 @@ public class HTTPServer {
             try {
                 String fileContent = Files.readString(filePath);
                 String contentType = Files.probeContentType(filePath); // guess content type
-                return new Response(200, Map.of("Content-Type", contentType), fileContent);
+                return new Response(200, Map.of("Content-Type", contentType + "; charset=utf-8"), fileContent);
             } catch (IOException e) {
                 System.err.printf("Failed to read requested file: %s: %s%n", filePath, e.getMessage());
                 return Response.HttpCatResponse(404);

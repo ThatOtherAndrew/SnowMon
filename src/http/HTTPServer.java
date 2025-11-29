@@ -16,7 +16,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class HTTPServer {
-    private static final Pattern REQUEST_LINE = Pattern.compile(
+    private static final Pattern REQUEST_LINE_PATTERN = Pattern.compile(
         "^"
         // https://www.rfc-editor.org/rfc/rfc9112.html#name-method
         // technically according to RFC 9110 section 5.6.2, tokens can have all sorts of goofy characters in them
@@ -134,6 +134,19 @@ public class HTTPServer {
         return headers;
     }
 
+    private String parseBody(BufferedReader in) throws IOException {
+        // this is a cursed abomination which violates line endings and probably corrupts non-text data
+        // probably good enough for the assignment though
+        StringBuilder body = new StringBuilder();
+        String line;
+
+        while ((line = in.readLine()) != null) {
+            body.append(line).append("\n");
+        }
+
+        return body.toString();
+    }
+
     private Response routeRequest(Request request) {
         for (Route route : routes.keySet()) {
             if (route.matches(request)) {
@@ -152,7 +165,7 @@ public class HTTPServer {
         onConnect(socket);
 
         // https://www.rfc-editor.org/rfc/rfc9112.html#name-request-line
-        Matcher requestLine = REQUEST_LINE.matcher(in.readLine());
+        Matcher requestLine = REQUEST_LINE_PATTERN.matcher(in.readLine());
         if (!requestLine.matches()) {
             // TODO: handle bad request
             return;
@@ -160,7 +173,7 @@ public class HTTPServer {
         String method = requestLine.group("method");
         String path = requestLine.group("path");
 
-        Request request = new Request(method, path, parseHeaders(in));
+        Request request = new Request(method, path, parseHeaders(in), parseBody(in));
         onRequest(request);
         Response response = routeRequest(request);
         onResponse(response);

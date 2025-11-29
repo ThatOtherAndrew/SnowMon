@@ -1,31 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <title>Ticket Chief</title>
-    <link href="styles.css" rel="stylesheet" />
-  </head>
-  <body>
-    <header>
-        <h1>Ticket Chief</h1>
-    </header>
-    <section class="ticket-info">
-        <!-- This element allows for the user to join the queue for this ticket. -->
-        <h2>Ticket Information</h2>
-        <p><strong>Artist:</strong> <span class="artist">—</span></p>
-        <p><strong>Venue:</strong> <span class="venue">—</span></p>
-        <p><strong>Date/Time:</strong> <span class="datetime">—</span></p>
-        <p><strong>Tickets Remaining:</strong> <span class="count">—</span></p>
-        <button class="join-queue">Queue to purchase</button>
-    </section>
-    <section class="queue-info">
-        <!-- This element shows the user their position in the queue once they have joined. -->
-        <h2>Queue</h2>
-        <p>
-            <strong>Artist:</strong> <span class="artist">—</span>: <span class="position">--</span>
-        </p>
-    </section>
-    <footer>
-        <p>Ticket Chief Purchasing System</p>
-    </footer>
-  </body>
+    <link href="styles.css" rel="stylesheet"/>
+    <script src="script.js" defer></script>
+</head>
+<body>
+<header>
+    <h1>Ticket Chief</h1>
+</header>
+<section class="ticket-info">
+    <!-- This element allows for the user to join the queue for this ticket. -->
+    <h2>Ticket Information</h2>
+    <p><b>Artist:</b> <span class="artist">—</span></p>
+    <p><b>Venue:</b> <span class="venue">—</span></p>
+    <p><b>Date/Time:</b> <span class="datetime">—</span></p>
+    <p><b>Tickets Remaining:</b> <span class="count">—</span></p>
+</section>
+<section class="ticket">
+    <h2>Buy tickets</h2>
+    <form id="purchase-form">
+        <span>
+        <label for="count"><b>No. of tickets:</b></label>
+        <input type="number" id="count" name="count" class="number-input" value="1" min="1" max="999" />
+        </span>
+        <input type="submit" class="join-queue" value="Queue to purchase"/>
+    </form>
+</section>
+<section class="queue-info">
+    <!-- This element shows the user their position in the queue once they have joined. -->
+    <h2>Queue</h2>
+    <p>
+        <b>Queue position:</b> <span class="position">Not in queue</span>
+    </p>
+</section>
+<section>
+    <h2>My Tickets</h2>
+    <ul id="ticket-list"></ul>
+</section>
+<footer>
+    <p>Ticket Chief Purchasing System</p>
+</footer>
+</body>
 </html>

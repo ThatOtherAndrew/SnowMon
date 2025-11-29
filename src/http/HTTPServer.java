@@ -162,10 +162,10 @@ public class HTTPServer {
     private String parseBody(BufferedReader in, Map<String, String> headers) throws BadRequestException, IOException {
         // this is a cursed abomination of an implementation but good enough for this coursework
 
-        String contentLengthString =  headers.get("Content-Length");
+        String contentLengthString = headers.get("Content-Length");
         if (contentLengthString == null) {
             // assume no body content
-            return null;
+            return "";
         }
 
         int contentLength;

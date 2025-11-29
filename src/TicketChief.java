@@ -1,4 +1,5 @@
 import events.Event;
+import events.PurchaseManager;
 import http.HTTPServer;
 import http.Response;
 import utils.PropertiesReader;
@@ -8,8 +9,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class TicketChief {
+    private static final Pattern PURCHASE_JSON_PATTERN = Pattern.compile(
+        "\\s*\\{"
+        + "\\s*\"tickets\"\\s*:\\s*(?<tickets>\\d+)\\s*"
+        + "\\s*}\\s*"
+    );
+
     public static void main(String[] args) {
         // read config with fallback values
         PropertiesReader properties;
@@ -38,7 +47,7 @@ public class TicketChief {
 
         // init server
         HTTPServer server = new HTTPServer(documentRoot);
-        registerRoutes(server, event);
+        registerRoutes(server, event, new PurchaseManager());
 
         try {
             server.start(port);
@@ -47,13 +56,57 @@ public class TicketChief {
         }
     }
 
-    private static void registerRoutes(HTTPServer server, Event event) {
+    private static void registerRoutes(HTTPServer server, Event event, PurchaseManager queue) {
         server.route("GET", "/tickets", request -> {
+            if (!"application/json".equals(request.headers().get("Accept"))) {
+                return Response.HttpCatResponse(406); // Not Acceptable
+            }
+
+            return new Response(200, Map.of("Content-Type", "application/json"), event.toJSON());
+        });
+
+        server.route("POST", "/queue", request -> {
+            if (!"application/json".equals(request.headers().get("Accept"))) {
+                return Response.HttpCatResponse(406); // Not Acceptable
+            }
+
+            if (!"application/json".equals(request.headers().get("Content-Type"))) {
+                return Response.HttpCatResponse(415); // Unsupported Media Type
+            }
+
+            Matcher matcher = PURCHASE_JSON_PATTERN.matcher(request.body());
+            if (!matcher.find()) { // invalid JSON
+                return Response.HttpCatResponse(400);
+            }
+            int ticketCount = Integer.parseInt(matcher.group("tickets"));
+
+            int requestId = queue.requestPurchase(ticketCount).id();
+            return new Response(
+                201, // FIXME: currently assumes tickets are always available
+                Map.of("Content-Type", "application/json", "Location", "/queue/" + requestId),
+                String.format("""
+                    {
+                        "id": %d
+                    }
+                    """.trim(), requestId)
+            );
+        });
+
+        server.route("GET", "/queue/:id", request -> {
             if (!"application/json".equals(request.headers().get("Accept"))) {
                 return Response.HttpCatResponse(406);
             }
 
-            return new Response(200, Map.of("Content-Type", "application/json"), event.toJSON());
+            int id;
+            try {
+                id = Integer.parseInt(request.getRouteParam("id"));
+            } catch (NumberFormatException e) {
+                // cascade invalid route as if resource not found
+                return null;
+            }
+
+            // TODO: all this stuff down here
+            return null;
         });
     }
 }

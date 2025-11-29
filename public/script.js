@@ -18,6 +18,7 @@ async function purchaseTickets(event) {
     });
 
     if (response.status === 201) {
+        document.querySelector('.request-id').innerText = (await response.json())['id'];
         await watchQueue(response.headers.get('Location'));
     } else if (response.status === 200) {
         alert('Not enough tickets available!');
@@ -37,7 +38,7 @@ async function watchQueue(location) {
             headers: {'Accept': 'application/json'},
         });
         json = await response.json();
-        position = json["position"];
+        position = json['position'];
 
         let positionText = position;
         if (position === -1) {
@@ -49,7 +50,12 @@ async function watchQueue(location) {
     }
 
     // tickets issued, so show ticket IDs on screen
-    myTickets.push(...json["ticketIds"]);
+    for (const ticketId of json['ticketIds']) {
+        myTickets.push({
+            requestId: json['id'],
+            ticketId: ticketId,
+        });
+    }
     await updateTickets();
 }
 
@@ -67,9 +73,17 @@ async function updateTicketInfo() {
 async function updateTickets() {
     const ul = document.getElementById('ticket-list');
     ul.innerHTML = '';
-    for (const ticketId of myTickets) {
+    for (const [index, ticket] of myTickets.entries()) {
         const li = document.createElement('li');
-        li.appendChild(document.createTextNode(ticketId));
+        li.innerHTML = `
+<div class="ticket">
+    <div class="ticket-index">${index + 1}</div>
+    <div>
+        <p><b>Request ID:</b> ${ticket.requestId}</p>
+        <p><b>Ticket ID:</b> ${ticket.ticketId}</p>
+    </div>
+</div>
+        `.trim();
         ul.appendChild(li);
     }
 }

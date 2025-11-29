@@ -12,17 +12,17 @@
 <section class="ticket-info">
     <!-- This element allows for the user to join the queue for this ticket. -->
     <h2>Ticket Information</h2>
-    <p><b>Artist:</b> <span class="artist">—</span></p>
-    <p><b>Venue:</b> <span class="venue">—</span></p>
-    <p><b>Date/Time:</b> <span class="datetime">—</span></p>
-    <p><b>Tickets Remaining:</b> <span class="count">—</span></p>
+    <p><b>Artist:</b> <span class="artist"></span></p>
+    <p><b>Venue:</b> <span class="venue"></span></p>
+    <p><b>Date/Time:</b> <span class="datetime"></span></p>
+    <p><b>Tickets Remaining:</b> <span class="count"></span></p>
 </section>
-<section class="ticket">
+<section>
     <h2>Buy tickets</h2>
     <form id="purchase-form">
         <span>
         <label for="count"><b>No. of tickets:</b></label>
-        <input type="number" id="count" name="count" class="number-input" value="1" min="1" max="999" />
+        <input type="number" id="count" name="count" class="number-input" value="1" min="1" max="999"/>
         </span>
         <input type="submit" class="join-queue" value="Queue to purchase"/>
     </form>
@@ -30,6 +30,9 @@
 <section class="queue-info">
     <!-- This element shows the user their position in the queue once they have joined. -->
     <h2>Queue</h2>
+    <p>
+        <b>Request ID:</b> <span class="request-id">N/A</span>
+    </p>
     <p>
         <b>Queue position:</b> <span class="position">Not in queue</span>
     </p>

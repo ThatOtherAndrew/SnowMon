@@ -8,9 +8,11 @@ public record Response(int statusCode, Map<String, String> headers, String body)
         // Some common HTTP status codes
         Map.entry(200, "OK"),
         Map.entry(201, "Created"),
+        Map.entry(204, "No Content"),
         Map.entry(400, "Bad Request"),
         Map.entry(404, "Not Found"),
         Map.entry(406, "Not Acceptable"),
+        Map.entry(409, "Conflict"),
         Map.entry(415, "Unsupported Media Type"),
         Map.entry(500, "Internal Server Error")
         // We haven't covered all of them but that's no bother!

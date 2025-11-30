@@ -31,12 +31,15 @@ public class PurchaseManager {
      */
     private int lastRequestId = 0;
 
-    private static class RequestEnqueuer extends Thread {
-        private final Queue<Integer> queue;
+    /**
+     * Map of request IDs to their enqueuer threads (for cancellation).
+     */
+    private final Map<Integer, RequestEnqueuer> enqueuers = new HashMap<>();
+
+    private class RequestEnqueuer extends Thread {
         private final int requestId;
 
-        public RequestEnqueuer(Queue<Integer> queue, int requestId) {
-            this.queue = queue;
+        public RequestEnqueuer(int requestId) {
             this.requestId = requestId;
         }
 
@@ -51,9 +54,11 @@ public class PurchaseManager {
             } catch (InterruptedException e) {
                 thread.interrupt();
                 System.out.printf("[%d] Cancelled adding ID %d to queue%n", thread.threadId(), requestId);
+                enqueuers.remove(requestId);
                 return;
             }
             queue.add(requestId);
+            enqueuers.remove(requestId); // Clean up after successful enqueue
             System.out.printf("[%d] Request ID %d successfully added to queue%n", thread.threadId(), requestId);
         }
     }
@@ -86,6 +91,12 @@ public class PurchaseManager {
                     // noinspection BusyWait
                     Thread.sleep(delay);
 
+                    // Make sure ticket hasn't been cancelled while waiting
+                    if (!Objects.equals(queue.peek(), requestId)) {
+                        System.out.printf("[%d] Request ID %d no longer in queue, continuing%n", thread.threadId(), requestId);
+                        continue;
+                    }
+
                     // ticket time!
                     requestId = queue.remove();
                     manager.fulfilPurchase(requestId);
@@ -111,7 +122,9 @@ public class PurchaseManager {
         requests.put(request.id(), request);
 
         // Spawn thread to add to queue after random delay
-        new RequestEnqueuer(queue, request.id()).start();
+        RequestEnqueuer enqueuer = new RequestEnqueuer(request.id());
+        enqueuers.put(request.id(), enqueuer);
+        enqueuer.start();
 
         return request;
     }
@@ -138,6 +151,28 @@ public class PurchaseManager {
 
     public PurchaseRequest getPurchaseRequest(int requestId) {
         return requests.get(requestId);
+    }
+
+    public boolean cancelPurchaseRequest(int requestId) {
+        PurchaseRequest request = requests.get(requestId);
+        if (request == null) {
+            throw new IllegalArgumentException("Invalid purchase request ID");
+        }
+
+        // Can't cancel if already purchased
+        if (purchased.contains(requestId)) {
+            return false;
+        }
+
+        // Try to interrupt the enqueuer thread if it's still waiting
+        RequestEnqueuer enqueuer = enqueuers.remove(requestId);
+        if (enqueuer != null && enqueuer.isAlive()) {
+            enqueuer.interrupt();
+        }
+
+        queue.remove(requestId);
+        requests.remove(requestId);
+        return true;
     }
 
     public String getRequestStatusJson(int requestId) {

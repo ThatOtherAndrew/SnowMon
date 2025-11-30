@@ -126,5 +126,26 @@ public class TicketChief {
 
             return new Response(200, Map.of("Content-Type", "application/json"), requestStatus);
         });
+
+        // DELETE /queue/:id
+        server.route("DELETE", "/queue/:id", request -> {
+            int id;
+            try {
+                id = Integer.parseInt(request.getRouteParam("id"));
+            } catch (NumberFormatException e) {
+                return Response.HttpCatResponse(404); // Treat non-numeric IDs as unknown / not found
+            }
+
+            try {
+                boolean cancelled = purchaseManager.cancelPurchaseRequest(id);
+                if (!cancelled) { // Can't cancel, request already fulfilled!
+                    return Response.HttpCatResponse(409); // Conflict
+                }
+            } catch (IllegalArgumentException e) {
+                return Response.HttpCatResponse(404); // Not Found
+            }
+
+            return new Response(204, Map.of(), ""); // No Content
+        });
     }
 }

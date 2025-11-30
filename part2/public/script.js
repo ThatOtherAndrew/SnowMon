@@ -56,6 +56,7 @@ async function watchQueue(location) {
     let json;
 
     while (position !== 0) {
+        // Exit early on cancellation
         if (cancelled) {
             cancelled = false;
             span.innerText = 'Cancelled';
@@ -68,13 +69,13 @@ async function watchQueue(location) {
         json = await response.json();
         position = json['position'];
 
-        let positionText = position;
-        if (position === -1) {
-            positionText = 'Joining queue...';
-        } else if (position === 0) {
-            positionText = 'Tickets issued!'
+        // Exit early on tickets successfully issued
+        if (position === 0) {
+            span.innerText = 'Tickets issued!';
+            break;
         }
-        span.innerText = positionText;
+
+        span.innerText = position === -1 ? 'Joining queue...' : position;
 
         // 500ms poll delay to not spam too many requests
         await new Promise(r => setTimeout(r, 500));

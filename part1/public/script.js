@@ -59,7 +59,7 @@ async function watchQueue(location) {
             ticketId: ticketId,
         });
     }
-    await updateTickets();
+    updateTickets();
 }
 
 async function updateTicketInfo() {
@@ -73,7 +73,7 @@ async function updateTicketInfo() {
     document.querySelector('.count').innerText = json['count'];
 }
 
-async function updateTickets() {
+function updateTickets() {
     const ul = document.getElementById('ticket-list');
     ul.innerHTML = '';
     for (const [index, ticket] of myTickets.entries()) {

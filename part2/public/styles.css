@@ -32,6 +32,18 @@ form {
     align-items: center;
 }
 
+.input {
+    padding: 0.5em;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    font-size: 1em;
+    background-color: white;
+}
+
+label {
+    padding-right: 0.75em;
+}
+
 .button {
     background-color: #338bff;
     color: white;
@@ -66,11 +78,7 @@ form {
     margin-bottom: 0;
 }
 
-.number-input {
-    padding: 0.5em;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 1em;
+.number {
     width: 3em;
 }
 

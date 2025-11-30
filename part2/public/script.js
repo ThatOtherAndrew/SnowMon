@@ -1,12 +1,36 @@
 'use strict';
 
+const events = [];
 const myTickets = [];
+let currentEventId = 0;
 let cancelled = false;
+
+async function fetchEvents() {
+    const response = await fetch('/tickets', {'headers': {'Content-Type': 'application/json'}});
+    events.push(...(await response.json()));
+
+    const select = document.getElementById('concert-select');
+    select.innerHTML = '';
+    for (const [index, event] of events.entries()) {
+        const option = document.createElement('option');
+        option.value = index.toString();
+        option.textContent = `${event['artist']} @ ${event['venue']}`;
+        select.appendChild(option);
+    }
+}
+
+async function selectConcert(event) {
+    currentEventId = parseInt(event.target.value);
+    await updateTicketInfo();
+}
 
 async function purchaseTickets(event) {
     event.preventDefault();
     const button = document.querySelector('.join-queue');
+    const dropdown = document.getElementById('concert-select');
     button.disabled = true; // disable button to prevent duplicate purchases
+    dropdown.disabled = true; // same thing with concert select
+
 
     const ticketCount = document.getElementById('count').valueAsNumber;
     const response = await fetch('/queue', {
@@ -15,20 +39,25 @@ async function purchaseTickets(event) {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({tickets: ticketCount}),
+        body: JSON.stringify({eventId: currentEventId, tickets: ticketCount}),
     });
 
     if (response.status === 201) {
+        // successfully added to queue
         document.querySelector('.request-id').innerText = (await response.json())['id'];
         document.querySelector('button.cancel').disabled = false;
         await watchQueue(response.headers.get('Location'));
     } else if (response.status === 200) {
         alert('Not enough tickets available!');
+    } else if (response.status === 422) {
+        alert('Invalid event selected.');
     } else {
         alert(`Sorry, something went wrong. (HTTP ${response.status})`);
     }
 
+    // re-enable inputs
     button.disabled = false;
+    dropdown.disabled = false;
 }
 
 async function cancelTickets() {
@@ -51,8 +80,10 @@ async function cancelTickets() {
 }
 
 async function refundTicket(event) {
-    const ticketId = event.target.closest('.ticket').querySelector('.ticket-id').innerText;
-    const response = await fetch('/tickets/refund', {
+    const ticketElement = event.target.closest('.ticket');
+    const eventId = ticketElement.querySelector('.event-id').innerText; // TODO
+    const ticketId = ticketElement.querySelector('.ticket-id').innerText;
+    const response = await fetch(`/tickets/${eventId}/refund`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ticketIds: [ticketId]}),
@@ -68,6 +99,9 @@ async function refundTicket(event) {
     } else if (response.status === 422) {
         // Server-side Event.refundTickets() returned false
         alert('Ticket could not be refunded.');
+    } else if (response.status === 404) {
+        // eventId is invalid
+        alert('Could not find event for ticket.');
     } else {
         // mystery error
         alert(`Sorry, something went wrong. (HTTP ${response.status})`);
@@ -117,7 +151,7 @@ async function watchQueue(location) {
 }
 
 async function updateTicketInfo() {
-    const response = await fetch('/tickets', {
+    const response = await fetch(`/tickets/${currentEventId}`, {
         headers: {'Accept': 'application/json'},
     });
     const json = await response.json();
@@ -150,14 +184,22 @@ function updateTickets() {
 }
 
 function main() {
-    // update every second
-    updateTicketInfo().then(() => setInterval(updateTicketInfo, 1000));
+    fetchEvents().then(() => {
+        // update every second
+        updateTicketInfo().then(() => setInterval(updateTicketInfo, 1000));
 
-    // get ticket form workin'
-    document.getElementById('purchase-form').addEventListener('submit', purchaseTickets);
+        // get ticket form workin'
+        document.getElementById('purchase-form').addEventListener('submit', purchaseTickets);
 
-    // and the cancel button too
-    document.querySelector('button.cancel').addEventListener('click', cancelTickets);
+        // and the cancel button too
+        document.querySelector('button.cancel').addEventListener('click', cancelTickets);
+
+        // and now the dropdown as well
+        document.getElementById('concert-select').addEventListener('change', selectConcert);
+    }).catch((reason) => {
+        console.error('Failed to fetch events:', reason);
+        alert('Failed to fetch events!');
+    })
 }
 
 addEventListener('load', main);

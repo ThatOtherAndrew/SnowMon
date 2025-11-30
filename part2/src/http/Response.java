@@ -14,6 +14,7 @@ public record Response(int statusCode, Map<String, String> headers, String body)
         Map.entry(406, "Not Acceptable"),
         Map.entry(409, "Conflict"),
         Map.entry(415, "Unsupported Media Type"),
+        Map.entry(422, "Unprocessable Entity"),
         Map.entry(500, "Internal Server Error")
         // We haven't covered all of them but that's no bother!
         // According to the RFC 9112, reason-phrase is optional anyways :D

@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -16,6 +18,14 @@ public class TicketChief {
     private static final Pattern PURCHASE_JSON_PATTERN = Pattern.compile(
         "\\s*\\{"
         + "\\s*\"tickets\"\\s*:\\s*(?<tickets>\\d+)\\s*"
+        + "\\s*}\\s*"
+    );
+
+    private static final Pattern REFUND_JSON_PATTERN = Pattern.compile(
+        "\\s*\\{\\s*"
+        + "\"ticketIds\"\\s*:\\s*\\[\\s*(?<ticketIds>"
+        + "(?:\"[^\"]*\"(?:\\s*,\\s*\"[^\"]*\")*)?"
+        + ")\\s*]\\s*"
         + "\\s*}\\s*"
     );
 
@@ -68,6 +78,32 @@ public class TicketChief {
                 Map.of("Content-Type", "application/json"),
                 purchaseManager.getEvent().toJSON()
             );
+        });
+
+        // POST /tickets/refund
+        server.route("POST", "/tickets/refund", request -> {
+            if (!"application/json".equals(request.headers().get("Content-Type"))) {
+                return Response.HttpCatResponse(415); // Unsupported Media Type
+            }
+
+            Matcher matcher = REFUND_JSON_PATTERN.matcher(request.body());
+            if (!matcher.find()) { // invalid JSON
+                return Response.HttpCatResponse(400); // Bad Request
+            }
+            String arrayContents = matcher.group("ticketIds");
+            // this is sooo janky but good enough for the purposes of the "json parsing" of this assignment
+            List<String> ticketIds = Arrays.stream(arrayContents.split("\\s*,\\s*"))
+                .map(s -> s.replaceAll("\"", "")) // remove quotes around strings
+                .toList();
+
+            boolean refunded = purchaseManager.getEvent().refundTickets(ticketIds);
+            if (!refunded) {
+                // in the current implementation of refundTickets this will never happen
+                // but hey, I'm Forward-Thinking™ !!!
+                return Response.HttpCatResponse(422); // Unprocessable Entity
+            }
+
+            return Response.HttpCatResponse(204); // No Content
         });
 
         // POST /queue

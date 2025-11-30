@@ -80,6 +80,12 @@ public class Event {
         return ticketIds;
     }
 
+    public boolean refundTickets(List<String> ticketIds) {
+        // extra ticket ID validation can be done here
+        this.ticketCount += ticketIds.size();
+        return true;
+    }
+
     public String getArtist() {
         return artist;
     }

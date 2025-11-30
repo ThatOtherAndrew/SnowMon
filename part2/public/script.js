@@ -50,6 +50,30 @@ async function cancelTickets() {
     }
 }
 
+async function refundTicket(event) {
+    const ticketId = event.target.closest('.ticket').querySelector('.ticket-id').innerText;
+    const response = await fetch('/tickets/refund', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ticketIds: [ticketId]}),
+    });
+    if (response.status === 204) {
+        // ticket successfully refunded
+        const index = myTickets.findIndex(ticket => ticket.ticketId === ticketId);
+        if (index > -1) {
+            myTickets.splice(index, 1);
+        }
+        await updateTicketInfo();
+        updateTickets();
+    } else if (response.status === 422) {
+        // Server-side Event.refundTickets() returned false
+        alert('Ticket could not be refunded.');
+    } else {
+        // mystery error
+        alert(`Sorry, something went wrong. (HTTP ${response.status})`);
+    }
+}
+
 async function watchQueue(location) {
     const span = document.querySelector('.position');
     let position = -1;
@@ -113,10 +137,14 @@ function updateTickets() {
     <div class="ticket-index">${index + 1}</div>
     <div>
         <p><b>Request ID:</b> ${ticket.requestId}</p>
-        <p><b>Ticket ID:</b> ${ticket.ticketId}</p>
+        <p><b>Ticket ID:</b> <span class="ticket-id">${ticket.ticketId}</span></p>
+    </div>
+    <div>
+        <button class="button danger">Refund</button>
     </div>
 </div>
         `.trim();
+        li.querySelector('button').addEventListener('click', refundTicket);
         ul.appendChild(li);
     }
 }

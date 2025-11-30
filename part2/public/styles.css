@@ -74,11 +74,11 @@ form {
     width: 3em;
 }
 
-.cancel {
+.danger {
     background-color: #ef482e;
 }
 
-.cancel:hover {
+.danger:hover {
     background-color: #ad2712;
 }
 
@@ -106,6 +106,10 @@ ul:not(:has(li))::after {
 .ticket-index {
     font-size: 2rem;
     margin-right: 2rem;
+}
+
+.ticket > :last-child {
+    margin-left: auto;
 }
 
 footer {

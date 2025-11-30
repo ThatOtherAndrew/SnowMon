@@ -81,7 +81,7 @@ async function cancelTickets() {
 
 async function refundTicket(event) {
     const ticketElement = event.target.closest('.ticket');
-    const eventId = ticketElement.querySelector('.event-id').innerText; // TODO
+    const eventId = ticketElement.querySelector('.event-id').innerText;
     const ticketId = ticketElement.querySelector('.ticket-id').innerText;
     const response = await fetch(`/tickets/${eventId}/refund`, {
         method: 'POST',
@@ -144,6 +144,7 @@ async function watchQueue(location) {
     for (const ticketId of json['ticketIds']) {
         myTickets.push({
             requestId: json['id'],
+            eventId: json['eventId'],
             ticketId: ticketId,
         });
     }
@@ -170,8 +171,18 @@ function updateTickets() {
 <div class="ticket">
     <div class="ticket-index">${index + 1}</div>
     <div>
-        <p><b>Request ID:</b> ${ticket.requestId}</p>
-        <p><b>Ticket ID:</b> <span class="ticket-id">${ticket.ticketId}</span></p>
+        <h3>Event information</h3>
+        <p>
+            <b>Artist:</b> <span class="artist">${events[ticket.eventId]['artist']}</span><br/>
+            <b>Venue:</b> <span class="venue">${events[ticket.eventId]['venue']}</span><br/>
+            <b>Date/Time:</b> <span class="datetime">${new Date(events[ticket.eventId]['datetime']).toLocaleString()}</span><br/>
+        </p>
+        <h3>Technical details</h3>
+        <p>
+            <b>Request ID:</b> ${ticket.requestId}<br/>
+            <b>Event ID:</b> <span class="event-id">${ticket.eventId}</span><br/>
+            <b>Ticket ID:</b> <span class="ticket-id">${ticket.ticketId}</span>
+        </p>
     </div>
     <div>
         <button class="button danger">Refund</button>

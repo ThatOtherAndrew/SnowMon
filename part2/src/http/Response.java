@@ -15,7 +15,7 @@ public record Response(int statusCode, Map<String, String> headers, String body)
         Map.entry(500, "Internal Server Error")
         // We haven't covered all of them but that's no bother!
         // According to the RFC 9112, reason-phrase is optional anyways :D
-        // so a fallback of an empty string will do
+        // so a fallback of a dummy string will do
     );
 
     public static Response HttpCatResponse(int statusCode) {

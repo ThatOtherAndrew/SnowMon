@@ -47,6 +47,9 @@ async function watchQueue(location) {
             positionText = 'Tickets issued!'
         }
         document.querySelector('.position').innerText = positionText;
+
+        // 500ms poll delay to not spam too many requests
+        await new Promise(r => setTimeout(r, 500));
     }
 
     // tickets issued, so show ticket IDs on screen

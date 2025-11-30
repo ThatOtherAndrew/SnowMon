@@ -116,7 +116,7 @@ public class TicketChief {
             try {
                 id = Integer.parseInt(request.getRouteParam("id"));
             } catch (NumberFormatException e) {
-                return Response.HttpCatResponse(404); // Tread non-numeric IDs as unknown / not found
+                return Response.HttpCatResponse(404); // Treat non-numeric IDs as unknown / not found
             }
 
             String requestStatus = purchaseManager.getRequestStatusJson(id);

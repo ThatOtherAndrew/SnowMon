@@ -7,9 +7,9 @@ import java.util.stream.Collectors;
 
 public class PurchaseManager {
     /**
-     * The event for which tickets are being sold.
+     * The events for which tickets are being sold.
      */
-    private final Event event;
+    private final Events events;
 
     /**
      * All purchase requests received by the server, regardless of current state.
@@ -106,19 +106,31 @@ public class PurchaseManager {
         }
     }
 
-    public PurchaseManager(Event event) {
-        this.event = event;
+    public PurchaseManager(Events events) {
+        this.events = events;
 
         // initialiser payment processor to consume from queue
         new PaymentProcessor(this, queue).start();
     }
 
-    public Event getEvent() {
-        return event;
+    public Event getEvent(int eventId) {
+        return events.getEvent(eventId);
     }
 
-    public PurchaseRequest requestPurchase(int ticketCount) {
-        PurchaseRequest request = new PurchaseRequest(++lastRequestId, ticketCount);
+    public Event getEvent(String eventId) {
+        try {
+            return getEvent(Integer.parseInt(eventId));
+        } catch (NumberFormatException e) {
+            throw new InvalidEventException("Invalid event ID: " + eventId);
+        }
+    }
+
+    public String getEventsAsJson() {
+        return events.getEventsAsJson();
+    }
+
+    public PurchaseRequest requestPurchase(int eventId, int ticketCount) {
+        PurchaseRequest request = new PurchaseRequest(++lastRequestId, eventId, ticketCount);
         requests.put(request.id(), request);
 
         // Spawn thread to add to queue after random delay
@@ -131,8 +143,10 @@ public class PurchaseManager {
 
     private void fulfilPurchase(int requestId) {
         PurchaseRequest request = requests.get(requestId);
+        Event event = getEvent(request.eventId());
+
         int requested = request.ticketCount();
-        int available = getEvent().getTicketCount();
+        int available = event.getTicketCount();
         if (requested > available) {
             // tickets sold out while waiting in the queue!
             // sell them what's left on a best-effort basis
@@ -140,7 +154,7 @@ public class PurchaseManager {
         }
 
         // give em their tickets!
-        List<String> ticketIds = getEvent().sellTickets(requested);
+        List<String> ticketIds = event.sellTickets(requested);
         for (String ticketId : ticketIds) {
             request.addTicketId(ticketId);
         }
@@ -196,6 +210,7 @@ public class PurchaseManager {
             """
                 {
                     "id": %d,
+                    "eventId": %d,
                     "tickets": %d,
                     "position": %d,
                     "ticketIds": [%s]
@@ -203,6 +218,7 @@ public class PurchaseManager {
                 """.trim(),
 
             request.id(),
+            request.eventId(),
             request.ticketCount(),
             queuePosition,
             request.ticketIds().stream()

@@ -1,11 +1,12 @@
 import events.Event;
+import events.Events;
+import events.InvalidEventException;
 import events.PurchaseManager;
 import http.HTTPServer;
 import http.Response;
 import utils.PropertiesReader;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -17,6 +18,7 @@ import java.util.regex.Pattern;
 public class TicketChief {
     private static final Pattern PURCHASE_JSON_PATTERN = Pattern.compile(
         "\\s*\\{"
+        + "\\s*\"eventId\"\\s*:\\s*(?<eventId>\\d+)\\s*,\\s*"
         + "\\s*\"tickets\"\\s*:\\s*(?<tickets>\\d+)\\s*"
         + "\\s*}\\s*"
     );
@@ -41,15 +43,11 @@ public class TicketChief {
 
         int port = properties.getIntProperty("serverPort", 8000);
         Path documentRoot = Paths.get(properties.getStringProperty("documentRoot", "public"));
-        Path eventsPath =  Paths.get(properties.getStringProperty("eventsPath", "tickets.json"));
+        Path eventsPath = Paths.get(properties.getStringProperty("eventsPath", "tickets.json"));
 
-        // read tickets.json file (or whatever else the file is named)
-        Event event;
+        Events events;
         try {
-            String[] eventJsonStrings = Files.readString(eventsPath)
-                .replaceAll("^\\s*\\[|]\\s*$", "") // remove outermost array brackets
-                .split("(?<=})\\s*,"); // split into separate objects
-            event = Event.fromJSON(eventJsonStrings[0]); // get first event
+            events = Events.fromJSONFile(eventsPath);
         } catch (IOException e) {
             System.err.println("Failed to read tickets.json file: " + e.getMessage());
             return;
@@ -57,7 +55,7 @@ public class TicketChief {
 
         // init server
         HTTPServer server = new HTTPServer(documentRoot);
-        registerRoutes(server, new PurchaseManager(event));
+        registerRoutes(server, new PurchaseManager(events));
 
         try {
             server.start(port);
@@ -68,20 +66,31 @@ public class TicketChief {
 
     private static void registerRoutes(HTTPServer server, PurchaseManager purchaseManager) {
         // GET /tickets
-        server.route("GET", "/tickets", request -> {
+        server.route("GET", "/tickets", request -> new Response(
+            200,
+            Map.of("Content-Type", "application/json"),
+            purchaseManager.getEventsAsJson()
+        ));
+
+        // GET /tickets/:id
+        server.route("GET", "/tickets/:id", request -> {
             if (!"application/json".equals(request.headers().get("Accept"))) {
                 return Response.HttpCatResponse(406); // Not Acceptable
             }
 
-            return new Response(
-                200,
-                Map.of("Content-Type", "application/json"),
-                purchaseManager.getEvent().toJSON()
-            );
+            try {
+                return new Response(
+                    200,
+                    Map.of("Content-Type", "application/json"),
+                    purchaseManager.getEvent(request.getRouteParam("id")).toJSON()
+                );
+            } catch (InvalidEventException e) {
+                return Response.HttpCatResponse(404); // Not Found
+            }
         });
 
-        // POST /tickets/refund
-        server.route("POST", "/tickets/refund", request -> {
+        // POST /tickets/:id/refund
+        server.route("POST", "/tickets/:id/refund", request -> {
             if (!"application/json".equals(request.headers().get("Content-Type"))) {
                 return Response.HttpCatResponse(415); // Unsupported Media Type
             }
@@ -96,8 +105,14 @@ public class TicketChief {
                 .map(s -> s.replaceAll("\"", "")) // remove quotes around strings
                 .toList();
 
-            boolean refunded = purchaseManager.getEvent().refundTickets(ticketIds);
-            if (!refunded) {
+            Event event;
+            try {
+                event = purchaseManager.getEvent(request.getRouteParam("id"));
+            } catch (InvalidEventException e) {
+                return Response.HttpCatResponse(404); // Not Found
+            }
+
+            if (!event.refundTickets(ticketIds)) {
                 // in the current implementation of refundTickets this will never happen
                 // but hey, I'm Forward-Thinking™ !!!
                 return Response.HttpCatResponse(422); // Unprocessable Entity
@@ -120,14 +135,15 @@ public class TicketChief {
             if (!matcher.find()) { // invalid JSON
                 return Response.HttpCatResponse(400); // Bad Request
             }
+            int eventId = Integer.parseInt(matcher.group("eventId"));
             int ticketCount = Integer.parseInt(matcher.group("tickets"));
 
             // return 200 if not enough tickets available
-            if (ticketCount > purchaseManager.getEvent().getTicketCount()) {
+            if (ticketCount > purchaseManager.getEvent(eventId).getTicketCount()) {
                 return Response.HttpCatResponse(200); // OK (not created)
             }
 
-            int requestId = purchaseManager.requestPurchase(ticketCount).id();
+            int requestId = purchaseManager.requestPurchase(eventId, ticketCount).id();
             return new Response(
                 201,
                 Map.of("Content-Type", "application/json", "Location", "/queue/" + requestId),

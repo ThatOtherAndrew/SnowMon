@@ -143,7 +143,13 @@ public class TicketChief {
                 return Response.HttpCatResponse(200); // OK (not created)
             }
 
-            int requestId = purchaseManager.requestPurchase(eventId, ticketCount).id();
+            int requestId;
+            try {
+                requestId = purchaseManager.requestPurchase(eventId, ticketCount).id();
+            } catch (InvalidEventException e) {
+                return Response.HttpCatResponse(422); // Unprocessable Entity
+            }
+
             return new Response(
                 201,
                 Map.of("Content-Type", "application/json", "Location", "/queue/" + requestId),

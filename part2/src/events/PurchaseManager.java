@@ -113,11 +113,11 @@ public class PurchaseManager {
         new PaymentProcessor(this, queue).start();
     }
 
-    public Event getEvent(int eventId) {
+    public Event getEvent(int eventId) throws InvalidEventException {
         return events.getEvent(eventId);
     }
 
-    public Event getEvent(String eventId) {
+    public Event getEvent(String eventId) throws InvalidEventException {
         try {
             return getEvent(Integer.parseInt(eventId));
         } catch (NumberFormatException e) {
@@ -129,7 +129,9 @@ public class PurchaseManager {
         return events.getEventsAsJson();
     }
 
-    public PurchaseRequest requestPurchase(int eventId, int ticketCount) {
+    public PurchaseRequest requestPurchase(int eventId, int ticketCount) throws InvalidEventException{
+        getEvent(eventId); // ensure that event actually exists
+
         PurchaseRequest request = new PurchaseRequest(++lastRequestId, eventId, ticketCount);
         requests.put(request.id(), request);
 

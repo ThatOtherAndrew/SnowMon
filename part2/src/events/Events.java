@@ -26,7 +26,7 @@ public class Events {
         );
     }
 
-    public Event getEvent(int eventId) {
+    public Event getEvent(int eventId) throws InvalidEventException{
         try {
             return events.get(eventId);
         } catch (IndexOutOfBoundsException e) {

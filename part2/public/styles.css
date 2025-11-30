@@ -32,15 +32,7 @@ form {
     align-items: center;
 }
 
-.number-input {
-    padding: 0.5em;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 1em;
-    width: 3em;
-}
-
-.join-queue {
+.button {
     background-color: #338bff;
     color: white;
     border: none;
@@ -50,14 +42,44 @@ form {
     transition: background-color 0.15s ease;
 }
 
-.join-queue:hover {
+.button:hover {
     cursor: pointer;
     background-color: #0066dd;
 }
 
-.join-queue:disabled {
+.button:disabled, .button:disabled:hover {
     cursor: default;
     background-color: #ddd;
+}
+
+.queue-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.queue-info > :first-child {
+    margin-top: 0;
+}
+
+.queue-info > :last-child {
+    margin-bottom: 0;
+}
+
+.number-input {
+    padding: 0.5em;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1em;
+    width: 3em;
+}
+
+.cancel {
+    background-color: #ef482e;
+}
+
+.cancel:hover {
+    background-color: #ad2712;
 }
 
 ul {

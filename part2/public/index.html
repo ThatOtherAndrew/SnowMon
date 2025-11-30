@@ -9,7 +9,7 @@
 <header>
     <h1>Ticket Chief</h1>
 </header>
-<section class="ticket-info">
+<section>
     <!-- This element allows for the user to join the queue for this ticket. -->
     <h2>Ticket Information</h2>
     <p><b>Artist:</b> <span class="artist"></span></p>
@@ -24,18 +24,25 @@
         <label for="count"><b>No. of tickets:</b></label>
         <input type="number" id="count" name="count" class="number-input" value="1" min="1" max="999"/>
         </span>
-        <input type="submit" class="join-queue" value="Queue to purchase"/>
+        <input type="submit" class="button join-queue" value="Queue to purchase"/>
     </form>
 </section>
-<section class="queue-info">
+<section>
     <!-- This element shows the user their position in the queue once they have joined. -->
     <h2>Queue</h2>
-    <p>
-        <b>Request ID:</b> <span class="request-id">N/A</span>
-    </p>
-    <p>
-        <b>Queue position:</b> <span class="position">Not in queue</span>
-    </p>
+    <div class="queue-container">
+        <div class="queue-info">
+            <p>
+                <b>Request ID:</b> <span class="request-id">N/A</span>
+            </p>
+            <p>
+                <b>Queue position:</b> <span class="position">Not in queue</span>
+            </p>
+        </div>
+        <div>
+            <button class="button cancel" disabled>Cancel purchase request</button>
+        </div>
+    </div>
 </section>
 <section>
     <h2>My Tickets</h2>

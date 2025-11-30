@@ -1,6 +1,7 @@
 'use strict';
 
 const myTickets = [];
+let cancelled = false;
 
 async function purchaseTickets(event) {
     event.preventDefault();
@@ -19,6 +20,7 @@ async function purchaseTickets(event) {
 
     if (response.status === 201) {
         document.querySelector('.request-id').innerText = (await response.json())['id'];
+        document.querySelector('button.cancel').disabled = false;
         await watchQueue(response.headers.get('Location'));
     } else if (response.status === 200) {
         alert('Not enough tickets available!');
@@ -29,11 +31,37 @@ async function purchaseTickets(event) {
     button.disabled = false;
 }
 
+async function cancelTickets() {
+    const requestId = document.querySelector('.request-id').innerText.trim();
+    const response = await fetch(`/queue/${requestId}`, {method: 'DELETE'});
+
+    if (response.status === 204) {
+        // successfully cancelled
+        cancelled = true;
+    } else if (response.status === 409) {
+        // tickets already fulfilled, too late
+        alert('Cannot cancel purchase, tickets already issued!');
+    } else if (response.status === 404) {
+        // invalid ticket id
+        alert('Ticket purchase request not found.');
+    } else {
+        // everything else (not good)
+        alert(`Sorry, something went wrong. (HTTP ${response.status})`);
+    }
+}
+
 async function watchQueue(location) {
+    const span = document.querySelector('.position');
     let position = -1;
     let json;
 
     while (position !== 0) {
+        if (cancelled) {
+            cancelled = false;
+            span.innerText = 'Cancelled';
+            break;
+        }
+
         const response = await fetch(location, {
             headers: {'Accept': 'application/json'},
         });
@@ -46,13 +74,14 @@ async function watchQueue(location) {
         } else if (position === 0) {
             positionText = 'Tickets issued!'
         }
-        document.querySelector('.position').innerText = positionText;
+        span.innerText = positionText;
 
         // 500ms poll delay to not spam too many requests
         await new Promise(r => setTimeout(r, 500));
     }
 
-    // tickets issued, so show ticket IDs on screen
+    // tickets issued, so hide cancel button and show ticket IDs on screen
+    document.querySelector('button.cancel').disabled = true;
     for (const ticketId of json['ticketIds']) {
         myTickets.push({
             requestId: json['id'],
@@ -97,6 +126,9 @@ function main() {
 
     // get ticket form workin'
     document.getElementById('purchase-form').addEventListener('submit', purchaseTickets);
+
+    // and the cancel button too
+    document.querySelector('button.cancel').addEventListener('click', cancelTickets);
 }
 
 addEventListener('load', main);

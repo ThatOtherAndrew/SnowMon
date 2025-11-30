@@ -19,7 +19,7 @@ public record Response(int statusCode, Map<String, String> headers, String body)
     );
 
     public static Response HttpCatResponse(int statusCode) {
-        // language=AngularHTML
+        // language=HTML
         String html = """
             <!DOCTYPE html>
             <html lang="en">

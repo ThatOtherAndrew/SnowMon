@@ -78,7 +78,15 @@ The `POST /tickets/refund` endpoint for clients to refund tickets, similar to th
 
 ### Multiple Concerts
 
-TODO
+Support for multiple concerts was implemented via an `Events` class. All references to the `Event` instance declared in `TicketChief` were replaced with an instance of this new class. Parsing of the `tickets.json` file was moved here. Each event is assigned an incremental ID derived from its index in the array when loaded, and a `getEvent()` method was implemented to fetch `Event` instances by their IDs. `InvalidEventException` was created such that any issues with invalid or out-of-bounds event IDs will bubble up and can be handled in one place in the code (i.e. in the route callback functions). The route can then return an HTTP 404 (Not Found) or 422 (Unprocessable Entity) error response, where the ID is provided as a route parameter or body JSON value respectively.
+
+Methods which previously acted implicitly on the only event now need to differentiate between multiple events. Therefore, the `PurchaseManager` class was extended with `getEvent()` and related methods, and `PurchaseRequest` was extended to also track the event ID the request is for.
+
+The `GET /tickets` route was adapted to return an array of all events, instead of just a single event. The prior functionality of fetching details for a single event was moved to the new `GET /tickets/:id` endpoint, with an additional possible response of a 404 if the route parameter is not a valid event ID.
+
+The `POST /tickets/refund` endpoint was similarly moved to `POST /tickets/:id/refund` to specify the event for which the tickets are being refunded to. The `POST /queue` endpoint for creating new purchase request did not need a location change, but the JSON payload format was modified to include an additional `eventId` key. The `GET /queue/:id` endpoint similarly remained unchanged, with the JSON response also including the additional `eventId` key. This approach was taken over instantiating multiple `PurchaseManager` instances (and thus having multiple queues) as it is implied in the coursework specification that processing purchase requests is a very expensive operation (hence the delays in adding to the queue, as well as the necessity for a queue in the first place). As such, having one global queue ensures that server load does not scale directly proportionally to the number of events.
+
+In the frontend user interface, a dropdown was added at the top to select the event the user wishes to view and interact with. Changing the selection mutates a global state tracking the current concert ID, which in turn is used in other API requests. Purchased tickets were overhauled to be more useful in the context of having multiple concerts, such that each ticket now shows the details for the concert the ticket is for, as well as various technical details / IDs for API usage. When queueing to purchase tickets for a concert, the dropdown selection is disabled to ensure that queue position updates are handled independently for each concert and do not conflict, as per the specification requirements.
 
 ## Part 3
 

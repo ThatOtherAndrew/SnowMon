@@ -94,7 +94,38 @@ In the frontend user interface, a dropdown was added at the top to select the ev
 
 ## Part 3
 
-TODO
+Part 3 focuses on the security and integrity of the system. The primary security concern addressed is **replay attacks**, where a malicious actor could intercept a valid HTTP request and re-send it to the server to perform duplicate actions (e.g. purchasing additional tickets, cancelling others' requests, or fraudulently refunding tickets). This is particularly problematic for state-changing operations in a ticketing system where financial transactions and limited inventory are involved.
+
+A nonce (number used once)[^4] mechanism was implemented to ensure that each state-changing request can only be processed once. The implementation consists of two components: server-side validation and client-side generation.
+
+[^4]: https://csrc.nist.gov/glossary/term/nonce
+
+### Server-Side Validation
+
+The `NonceManager` class in the `utils` package maintains a thread-safe set of previously used nonces using `Collections.synchronizedSet()`. The `validateNonce()` method checks whether a provided nonce is valid (non-null, non-blank, and not previously used) and atomically marks it as used upon successful validation. This ensures that even if an attacker intercepts and replays a request, the server will reject it as the nonce has already been consumed.
+
+Nonce validation was added to all three state-changing endpoints:
+- `POST /queue` - creating ticket purchase requests
+- `POST /tickets/:id/refund` - refunding purchased tickets
+- `DELETE /queue/:id` - cancelling pending purchase requests
+
+Each of these endpoints now checks for an `X-Nonce` header and returns an HTTP 400 (Bad Request) response if the nonce is missing, blank, or has already been used. Read-only endpoints (`GET /tickets`, `GET /tickets/:id`, `GET /queue/:id`) were intentionally left unprotected as they do not modify server state and pose no replay attack risk.
+
+### Client-Side Generation
+
+On the frontend, a `generateNonce()` helper function was added to `script.js`. This function uses the Web Crypto API's `crypto.getRandomValues()` to generate 16 cryptographically secure random bytes, which are then converted to a 32-character hexadecimal string. This provides sufficient entropy (128 bits) to make nonce collisions practically impossible, ensuring each request has a unique identifier.
+
+The generated nonce is included as an `X-Nonce` header in all state-changing fetch requests. The custom header name was chosen to avoid conflicts with standard HTTP headers whilst clearly indicating its purpose.
+
+### Limitations
+
+This implementation assumes that an attacker cannot modify the nonce value in transit - it only prevents exact replay attacks. For protection against man-in-the-middle attacks where request contents could be modified, HTTPS should be used (as demonstrated in the client-server separation testing). Additionally, the current implementation stores all used nonces indefinitely in memory, which could theoretically lead to memory exhaustion under sustained attack; a production system would benefit from nonce expiration or a bounded cache.
+
+### Further Security Aims
+
+The above nonce implementation for prevention of replay attacks addresses security, but does not address integrity. A further change to address integrity could be to also include an `X-Hash` header which uses the SHA256 cryptographic hash algorithm on the request body, to ensure that if the body is mutated or not fully transmitted then the hash will not match.
+
+Currently, the server completely lacks authentication, meaning that anyone can craft a request to refund tickets or cancel someone's queue position on their behalf. This could be solved using session tokens or JSON Web Tokens (JWTs), where the server issues a signed token upon login that must be included in subsequent requests. The server would then verify the token's signature and check that the authenticated user owns the resource they are attempting to modify (e.g. only allowing refunds for tickets the user purchased). However, implementing a full authentication system is assumed beyond the scope of this assignment.
 
 {{< pagebreak >}}
 
@@ -102,9 +133,9 @@ TODO
 
 ## Automated HTTP requests
 
-In Part 1 of the assignment, a `tests.http` file was created containing many HTTP requests to be run in sequence using the JetBrains HTTP Client[^4]. Some endpoints could be comprehensively tested this way - for instance, `GET /tickets` was fully tested with correct, incorrect, and missing headers, and the response JSON is parsed and validated with inline JavaScript. However, more complex integration testing (e.g. monitoring progress of multiple simultaneously posted purchase requests as they advance through the queue) could not be covered by a straightforward automated testing procedure. Despite this, an attempt was made at covering some such cases within the file, including fetching queue details for a purchase request both when in the queue and when fulfilled.
+In Part 1 of the assignment, a `tests.http` file was created containing many HTTP requests to be run in sequence using the JetBrains HTTP Client[^5]. Some endpoints could be comprehensively tested this way - for instance, `GET /tickets` was fully tested with correct, incorrect, and missing headers, and the response JSON is parsed and validated with inline JavaScript. However, more complex integration testing (e.g. monitoring progress of multiple simultaneously posted purchase requests as they advance through the queue) could not be covered by a straightforward automated testing procedure. Despite this, an attempt was made at covering some such cases within the file, including fetching queue details for a purchase request both when in the queue and when fulfilled.
 
-[^4]: https://plugins.jetbrains.com/plugin/13121-http-client
+[^5]: https://plugins.jetbrains.com/plugin/13121-http-client
 
 An abridged version of the test results, listing only test suites instead of individual tests for brevity, is shown below:
 
@@ -135,9 +166,9 @@ In Part 2, due to all new features/changes being complex and stateful, automated
 
 ## Manual `curl` testing
 
-For more complete integration testing surrounding the ticket queue, the `curl` command-line tool[^5] was used to send HTTP requests. This step was not automated due to the random processing delays in the queue causing non-deterministic behaviour. The testing results are summarised below:
+For more complete integration testing surrounding the ticket queue, the `curl` command-line tool[^6] was used to send HTTP requests. This step was not automated due to the random processing delays in the queue causing non-deterministic behaviour. The testing results are summarised below:
 
-[^5]: https://curl.se/
+[^6]: https://curl.se/
 
 | What is being tested                                                        | Pre-conditions                                              | Expected outcome                                         | Actual outcome         |
 |-----------------------------------------------------------------------------|-------------------------------------------------------------|----------------------------------------------------------|------------------------|
@@ -195,12 +226,26 @@ The browser testing table is shown below:
 
 {{< pagebreak >}}
 
+## Security Testing
+
+To ensure that the nonce-based replay attack safeguards implemented in Part 3 function correctly, a replay attack from a bad actor was simulated by capturing network requests using the Chrome DevTools[^7] Network tab. A ticket purchase was requested, resulting in a captured HTTP request to the `POST /queue` endpoint:
+
+![A screenshot of Chrome DevTools showing the captured POST /queue request, with the X-Nonce header highlighted.](meta/assets/devtools.png){width=65%}
+
+Right-clicking and selecting `Copy > Copy as cURL`, then pasting and executing in the terminal, reveals that the replay attack is successfully stopped with an HTTP 400 (Bad Request) response instead:
+
+![The terminal output after simulating a replay attack with DevTools and curl.](meta/assets/replay.png){width=65%}
+
+[^7]: https://developer.chrome.com/docs/devtools
+
+{{< pagebreak >}}
+
 # Evaluation & Conclusion
 
 I believe that the learning intention of this assignment, as well as all requirements in the coursework specification, were successfully met.
 
-Overall, despite the usual time management issues and domino effect of serial late coursework submissions, I am proud of what's accomplished in this coursework submission and the degree of polish achieved. The most enjoyable technical challenge in this assignment was designing a pleasant developer interface for the `HTTPClient` class (I found the routing implementation very satisfying! And was surprised that it worked first try too...). The most difficult technical challenge in this assignment was the threaded implementation of appending and consuming the ticket queue, especially having never written threaded code before. I believe that my implementation may be vulnerable to race conditions in certain extreme circumstances, but it is sufficiently functional for the purposes of this assignment. And hey, I'm still 2 years off from taking CS4204[^6], so that's my excuse.
+Overall, despite the usual time management issues and domino effect of serial late coursework submissions, I am proud of what's accomplished in this coursework submission and the degree of polish achieved. The most enjoyable technical challenge in this assignment was designing a pleasant developer interface for the `HTTPClient` class (I found the routing implementation very satisfying! And was surprised that it worked first try too...). The most difficult technical challenge in this assignment was the threaded implementation of appending and consuming the ticket queue, especially having never written threaded code before. I believe that my implementation may be vulnerable to race conditions in certain extreme circumstances, but it is sufficiently functional for the purposes of this assignment. And hey, I'm still 2 years off from taking CS4204[^8], so that's my excuse.
 
 Given more time, one way I could expand upon this project is to implement support for including arbitrary data as bytes in HTTP requests and responses (e.g. for images) - or even WebSockets if I'm feeling extra fancy. Also, it would be nice to have an actual proper JSON parser.
 
-[^6]: https://info.cs.st-andrews.ac.uk/student-handbook/modules/CS4204.html
+[^8]: https://info.cs.st-andrews.ac.uk/student-handbook/modules/CS4204.html

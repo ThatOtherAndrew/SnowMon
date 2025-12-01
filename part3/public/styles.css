@@ -1,0 +1,130 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f6f8;
+    color: #222;
+}
+
+header {
+    background-color: #0066dd;
+    color: white;
+    text-align: center;
+    padding: 1em;
+}
+
+section {
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    width: 90%;
+    max-width: 600px;
+    margin: 1em auto;
+    padding: 1em 1.5em;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+h1, h2 {
+    margin-top: 0;
+}
+
+form {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.input {
+    padding: 0.5em;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    font-size: 1em;
+    background-color: white;
+}
+
+label {
+    padding-right: 0.75em;
+}
+
+.button {
+    background-color: #338bff;
+    color: white;
+    border: none;
+    padding: 0.5em 1em;
+    border-radius: 4px;
+    font-size: 1em;
+    transition: background-color 0.15s ease;
+}
+
+.button:hover {
+    cursor: pointer;
+    background-color: #0066dd;
+}
+
+.button:disabled, .button:disabled:hover {
+    cursor: default;
+    background-color: #ddd;
+}
+
+.queue-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.queue-info > :first-child {
+    margin-top: 0;
+}
+
+.queue-info > :last-child {
+    margin-bottom: 0;
+}
+
+.number {
+    width: 3em;
+}
+
+.danger {
+    background-color: #ef482e;
+}
+
+.danger:hover {
+    background-color: #ad2712;
+}
+
+ul {
+    list-style-type: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+ul:not(:has(li))::after {
+    content: "No tickets purchased"
+}
+
+.ticket {
+    display: flex;
+    align-items: center;
+    background-color: #cce2ff;
+    border-radius: 8px;
+    padding: .2em 2em;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.ticket-index {
+    font-size: 2rem;
+    margin-right: 2rem;
+}
+
+.ticket > :last-child {
+    margin-left: auto;
+}
+
+footer {
+    text-align: center;
+    color: #555;
+    font-size: 0.9em;
+    padding: 1em 0;
+    border-top: 1px solid #ccc;
+    margin-top: 2em;
+}

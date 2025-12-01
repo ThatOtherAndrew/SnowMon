@@ -131,6 +131,8 @@ For full test results, please open the `/part1/test/results.html` file in a brow
 
 ![A sample of the results.html file as viewed from a browser.](meta/assets/test_results.png)
 
+In Part 2, due to all new features/changes being complex and stateful, automated HTTP testing was dropped.
+
 ## Manual `curl` testing
 
 For more complete integration testing surrounding the ticket queue, the `curl` command-line tool[^5] was used to send HTTP requests. This step was not automated due to the random processing delays in the queue causing non-deterministic behaviour. The testing results are summarised below:
@@ -149,6 +151,12 @@ As additional testing evidence, shown below are sample screenshots for the first
 
 ![HTTP requests executed with curl, demonstrating purchase request atomicity.](meta/assets/curl.png)
 
+## Client-server separation testing
+
+To ensure that the client and server function correctly when run across a real network (instead of loopback/localhost), as well as with a different domain name, the server was run on a physically separate device. Instead of two lab machines, a laptop and a mobile phone were used instead, as that is more exciting. The server was also tested with SSL to ensure that full functionality is present over an HTTPS connection.
+
+![A mobile phone running the TicketChief client page over an SSL connection.](meta/assets/phone.png){width=50%}
+
 ## Manual `nc` testing
 
 To ensure that the HTTP server correctly rejects malformed HTTP requests with an HTTP 400 (Bad Request) response, since `curl` is designed to send well-formed HTTP requests, the `nc` (netcat) command-line tool was used instead. The below testing table summarises the variations of malformed HTTP requests which were typed in:
@@ -166,7 +174,24 @@ To ensure that the HTTP server correctly rejects malformed HTTP requests with an
 
 ## Browser testing
 
-TODO: cross-origin testing
+Lastly, as a full-stack test, a comprehensive range of user flows were tested via the browser to ensure that all functionality is present.
+
+The browser testing table is shown below:
+
+| What is being tested                                | Pre-conditions                                             | Expected Outcome                 | Actual Outcome            |
+|-----------------------------------------------------|------------------------------------------------------------|----------------------------------|---------------------------|
+| Tickets can be purchased                            | Purchase 3 tickets                                         | 3 tickets issued                 | 3 tickets issued          |
+| Ticket queue status is live-updating                | Purchase tickets in multiple tabs                          | Queue position slowly ticks down | Queue position ticks down |
+| Remaining ticket count is live-updating             | Purchase tickets in multiple tabs                          | Ticket count slowly ticks down   | Ticket count ticks down   |
+| Enqueued requests can be cancelled                  | Purchase tickets, click cancel                             | Request removed from queue       | Request removed           |
+| Requests can't be cancelled after receiving tickets | Purchase tickets, wait for completion, click cancel        | Cancel button disabled           | Button disabled           |
+| Tickets can be refunded                             | Purchase tickets, click refund                             | Tickets removed from list        | Tickets removed           |
+| Tickets can be refunded whilst queueing             | Purchase tickets, refund different tickets whilst queueing | Both operations succeed          | Both succeed              |
+| Ticket count increases after refund                 | Note count, purchase 2, refund 2                           | Count returns to original        | Count returns to original |
+| Selected concert can be changed                     | Select different concert from dropdown                     | Event details update             | Event details update      |
+| Selected concert can't be changed when queueing     | Purchase tickets, attempt to change concert                | Dropdown disabled                | Dropdown disabled         |
+
+![A screenshot of the Ticket Chief browser page during testing.](meta/assets/page.png)
 
 {{< pagebreak >}}
 
@@ -175,5 +200,7 @@ TODO: cross-origin testing
 I believe that the learning intention of this assignment, as well as all requirements in the coursework specification, were successfully met.
 
 Overall, despite the usual time management issues and domino effect of serial late coursework submissions, I am proud of what's accomplished in this coursework submission and the degree of polish achieved. The most enjoyable technical challenge in this assignment was designing a pleasant developer interface for the `HTTPClient` class (I found the routing implementation very satisfying! And was surprised that it worked first try too...). The most difficult technical challenge in this assignment was the threaded implementation of appending and consuming the ticket queue, especially having never written threaded code before. I believe that my implementation may be vulnerable to race conditions in certain extreme circumstances, but it is sufficiently functional for the purposes of this assignment. And hey, I'm still 2 years off from taking CS4204[^6], so that's my excuse.
+
+Given more time, one way I could expand upon this project is to implement support for including arbitrary data as bytes in HTTP requests and responses (e.g. for images) - or even WebSockets if I'm feeling extra fancy. Also, it would be nice to have an actual proper JSON parser.
 
 [^6]: https://info.cs.st-andrews.ac.uk/student-handbook/modules/CS4204.html

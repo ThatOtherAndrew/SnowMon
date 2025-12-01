@@ -1,8 +1,12 @@
+{{< pagebreak >}}
+
 # Overview
 
 This assignment is an advanced exercise in understanding and implementing the fundamentals of the HTTP protocol, as well developing an understanding of low-level full-stack web development and how to design efficient and robust communications systems between frontend clients and backend servers. This was successfully accomplished, with a fully functional implementation of a mock ticket sales platform.
 
 # Design
+
+(Hi marker! I'm running on my second consecutive all-nighter trying to finish off this late coursework once and for all, so I apologise in advance for the absolute behemoth textwall below and hope that it's coherent enough for you to make sense of. Also please don't tell me if I've accidentally left a todo message somewhere because I will probably cry.)
 
 ## Part 1
 
@@ -92,6 +96,84 @@ In the frontend user interface, a dropdown was added at the top to select the ev
 
 TODO
 
+{{< pagebreak >}}
+
 # Testing
 
+## Automated HTTP requests
+
+In Part 1 of the assignment, a `tests.http` file was created containing many HTTP requests to be run in sequence using the JetBrains HTTP Client[^4]. Some endpoints could be comprehensively tested this way - for instance, `GET /tickets` was fully tested with correct, incorrect, and missing headers, and the response JSON is parsed and validated with inline JavaScript. However, more complex integration testing (e.g. monitoring progress of multiple simultaneously posted purchase requests as they advance through the queue) could not be covered by a straightforward automated testing procedure. Despite this, an attempt was made at covering some such cases within the file, including fetching queue details for a purchase request both when in the queue and when fulfilled.
+
+[^4]: https://plugins.jetbrains.com/plugin/13121-http-client
+
+An abridged version of the test results, listing only test suites instead of individual tests for brevity, is shown below:
+
+<!-- BEGIN tests -->
+| Test suite                                                            | Status |
+|-----------------------------------------------------------------------|--------|
+| **Create ticket purchase request**                                    | Pass   |
+| **Create ticket purchase request with incorrect Accept header**       | Pass   |
+| **Create ticket purchase request with incorrect Content-Type header** | Pass   |
+| **Create ticket purchase request with malformed body**                | Pass   |
+| **Create ticket purchase request with missing Accept header**         | Pass   |
+| **Create ticket purchase request with missing Content-Type header**   | Pass   |
+| **Create ticket purchase request with missing body**                  | Pass   |
+| **Create ticket purchase request with too many tickets**              | Pass   |
+| **Get event details**                                                 | Pass   |
+| **Get event details with incorrect Accept header**                    | Pass   |
+| **Get event details with missing Accept header**                      | Pass   |
+| **Get home page**                                                     | Pass   |
+| **Get ticket purchase request status after fulfilled**                | Pass   |
+| **Get ticket purchase request status before enqueued**                | Pass   |
+<!-- END tests -->
+
+For full test results, please open the `/part1/test/results.html` file in a browser.
+
+![A sample of the results.html file as viewed from a browser.](meta/assets/test_results.png)
+
+## Manual `curl` testing
+
+For more complete integration testing surrounding the ticket queue, the `curl` command-line tool[^5] was used to send HTTP requests. This step was not automated due to the random processing delays in the queue causing non-deterministic behaviour. The testing results are summarised below:
+
+[^5]: https://curl.se/
+
+| What is being tested                                                        | Pre-conditions                                              | Expected outcome                                         | Actual outcome         |
+|-----------------------------------------------------------------------------|-------------------------------------------------------------|----------------------------------------------------------|------------------------|
+| Queue may be ordered differently to POST request order                      | Repeat `POST /queue` until observed                         | Eventually queue order differs randomly                  | Queue order is random  |
+| Purchase requests are atomic (ID does not increment on invalid request)     | Post invalid JSON, then request 999 tickets                 | Subsequent valid request has ID 1                        | Response has ID 1      |
+| Enqueued requests for more tickets than available are fulfilled best-effort | Request 249 tickets, wait until enqueued, request 2 tickets | `GET /queue/2` returns only 1 ticket ID after completion | ticketIds has length 1 |
+
+As additional testing evidence, shown below are sample screenshots for the first two tests in the above table, showing the server console output and the client `curl` commands respectively:
+
+![TicketChief server console output, demonstrating queue order randomness.](meta/assets/console.png){width=50%}
+
+![HTTP requests executed with curl, demonstrating purchase request atomicity.](meta/assets/curl.png)
+
+## Manual `nc` testing
+
+To ensure that the HTTP server correctly rejects malformed HTTP requests with an HTTP 400 (Bad Request) response, since `curl` is designed to send well-formed HTTP requests, the `nc` (netcat) command-line tool was used instead. The below testing table summarises the variations of malformed HTTP requests which were typed in:
+
+| What is being tested      | Pre-conditions                 | Expected | Actual   |
+|---------------------------|--------------------------------|----------|----------|
+| Missing request line      | N/A                            | HTTP 400 | HTTP 400 |
+| Protocol version mismatch | HTTP/0.9 in request line       | HTTP 400 | HTTP 400 |
+| Invalid request target    | GET \@\@invalid\@\@ HTTP/1.1   | HTTP 400 | HTTP 400 |
+| Malformed header line     | Header without colon separator | HTTP 400 | HTTP 400 |
+| Missing blank line        | No blank line before body      | HTTP 400 | HTTP 400 |
+| Invalid Content-Length    | Content-Length: not_a_number   | HTTP 400 | HTTP 400 |
+
+![The first three netcat malformed HTTP tests shown side by side.](meta/assets/netcat.png)
+
+## Browser testing
+
+TODO: cross-origin testing
+
+{{< pagebreak >}}
+
 # Evaluation & Conclusion
+
+I believe that the learning intention of this assignment, as well as all requirements in the coursework specification, were successfully met.
+
+Overall, despite the usual time management issues and domino effect of serial late coursework submissions, I am proud of what's accomplished in this coursework submission and the degree of polish achieved. The most enjoyable technical challenge in this assignment was designing a pleasant developer interface for the `HTTPClient` class (I found the routing implementation very satisfying! And was surprised that it worked first try too...). The most difficult technical challenge in this assignment was the threaded implementation of appending and consuming the ticket queue, especially having never written threaded code before. I believe that my implementation may be vulnerable to race conditions in certain extreme circumstances, but it is sufficiently functional for the purposes of this assignment. And hey, I'm still 2 years off from taking CS4204[^6], so that's my excuse.
+
+[^6]: https://info.cs.st-andrews.ac.uk/student-handbook/modules/CS4204.html

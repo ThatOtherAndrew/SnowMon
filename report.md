@@ -28,7 +28,7 @@ The `events` package handles backend concert state. The `PurchaseManager` class 
 
 A `RequestEnqueuer` thread is instantiated for every purchase request, sleeping for a random interval before adding the purchase request to the end of the queue. Logging is implemented to keep track of the thread's current state. A single `PaymentProcessor` thread is instantiated upon initialisation of the `PurchaseManager` class, which waits for the queue to be populated, sleeps for a random amount as a mock for handling a financial transaction, then fulfils the user's purchase request with a reference to the `PurchaseManager` instance.
 
-The `PurchaseManager.fulfilPurchase()` method is responsible for allocating tickets to the customer after the "payment" is complete. If there are not enough tickets available (i.e. the tickets got sold out while waiting in the queue), a best-effort attempt is made, selling as many tickets as possible to the end user.
+The `PurchaseManager.fulfilPurchase()` method is responsible for allocating tickets to the customer after the "payment" is complete. If there are not enough tickets available (i.e. the tickets got sold out while waiting in the queue), a best-effort attempt is made, selling as many tickets as possible to the end user. Ticket IDs are issued by the `Event.sellTickets()` method, and are generated as random UUID strings. This approach was taken over using an autoincrementing / sequential ID system as it makes others' ticket IDs unguessable.
 
 JSON parsing was handled using hard-coded regular expressions, to avoid having to implement a full standards-compliant JSON parser (outwith the scope of this assignment's learning intention) or using an external third-party parsing library (disallowed by the specification). This is not the most robust approach as it does not handle e.g. escaped character sequences correctly, nor does it support arbitrary ordering of JSON keys, but it is sufficient for this assignment as we are implementing the client and thus have control over its implementation. JSON responses were simpler, using Java string formatting functionality to fill in values into a JSON string template.
 
@@ -39,12 +39,12 @@ Finally, the `TicketChief` entrypoint class brings it all together, reading the 
 #### `GET /tickets`
 
 This endpoint is implemented as per the specification, with a couple of notes:
-- An additional response of HTTP 406 (Not Acceptable) is used if the client omits or specifies an incompatible MIME type in the `Accept:` header.
+- An additional response of HTTP 406 (Not Acceptable) is used if the client omits or specifies an incompatible MIME type in the `Accept` header.
 - String length validation is intentionally omitted as the concert data is static and immutable, all provided events are compliant, and truncation is undesirable. The maximum string length in the specification is interpreted as being an input constraint/precondition.
 
 #### `POST /queue`
 
-As above, an HTTP 406 response is sent on an invalid `Accept:` header. Similarly, an HTTP 415 (Unspported Media Type) response is set if the `Content-Type` header is set incorrectly.
+As above, an HTTP 406 response is sent on an invalid `Accept` header. Similarly, an HTTP 415 (Unspported Media Type) response is set if the `Content-Type` header is set incorrectly.
 
 #### `GET /queue/:id`
 
@@ -64,7 +64,7 @@ The behaviour in Part 2 is implemented as follows:
 
 Request cancellation is implemented in the `PurchaseManager.cancelPurchaseRequest()` method. The `RequestEnqueuer` thread is interruptible, and if the thread for the request ID is still running (indicating it has not yet been added to the purchase queue), then the thread is interrupted and purchase request handling is aborted. If it is already on the queue then it is simply removed with `Queue.remove()`. The `PaymentProcessor` thread performs a check at the start and end of processing each request to ensure that the head element of the queue is the same, and skips fulfilling the purchase if there is a mismatch. This handles the case of a request being cancelled when it is first in the queue and already being processed by the `PaymentProcessor` thread. If the purchase has already been fulfilled then the method returns a value of `false` indicating the cancellation has been unsuccessful.
 
-The `DELETE /queue/:id` endpoint is implemented for purchase request cancellation. The response has no HTTP message body, as it uses an HTTP 204 (No Content) response as conventional to indicate a successful DELETE request[^3], which prohibits the use of a body. If the deletion is unsuccessful then an HTTP 409 (Conflict) response is returned indicating conflicting state (already purchased tickets cannot be cancelled, only refunded), and if the purchase request is invalid or not found then a 404 is returned.
+The `DELETE /queue/:id` endpoint is implemented for purchase request cancellation. The response has no HTTP message body, as it uses an HTTP 204 (No Content) response as conventional to indicate a successful DELETE request[^3], which prohibits the use of a body. If the deletion is unsuccessful then an HTTP 409 (Conflict) response is returned indicating conflicting state (already purchased tickets cannot be cancelled, only refunded), and if the purchase request is invalid or not found then a 404 is returned. All other HTTP responses are consistent with the rest of the API specification, as requested in the assignment specification - HTTP 400 on a malformed request, and 500 on an uncaught server error. No header checks are performed as a JSON body is not transmitted in the request nor the response.
 
 [^3]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/204
 
@@ -72,7 +72,9 @@ On the frontend, a `Cancel purchase request` button is added, with a red backgro
 
 ### Refunding Tickets
 
-TODO
+The `Event.refundTickets()` method was implemented in order to handle refunding tickets by their IDs. While this could have been accomplished simply by taking the length of the array of ticket IDs in the refund endpoint's lambda function, this approach makes it trivial to expand the implementation in future to store issued ticket IDs and validate refunded IDs. For example, the method returns a boolean which can be false if an invalid ticket ID is received, which would cause an HTTP 422 Unprocessable Entity response to be sent to the client. Refunds are intended to be atomic; either all ticket IDs get refunded, or none of them do, to avoid leaving clients in a half-processed state where some tickets are refunded but not others.
+
+The `POST /tickets/refund` endpoint for clients to refund tickets, similar to the purchase request cancellation endpoint detailed above, returns an HTTP response without a body and returns an HTTP 204 No Content response on a successful refund. Consistent with the prior API, HTTP 415 is returned on a bad `Content-Type` header, and HTTP 400 is returned if an incorrect JSON body is provided.
 
 ### Multiple Concerts
 

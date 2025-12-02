@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Ticket Chief</title>
+    <link href="styles.css" rel="stylesheet"/>
+    <script src="script.js" defer></script>
+</head>
+<body>
+<header>
+    <h1>Ticket Chief</h1>
+</header>
+<section>
+    <h2>Selected Concert</h2>
+    <span>
+        <label for="concert-select"><b>Currently viewing:</b></label>
+        <select id="concert-select" class="input">
+            <option>Loading...</option>
+        </select>
+    </span>
+</section>
+<section>
+    <!-- This element allows for the user to join the queue for this ticket. -->
+    <h2>Ticket Information</h2>
+    <p><b>Artist:</b> <span class="artist"></span></p>
+    <p><b>Venue:</b> <span class="venue"></span></p>
+    <p><b>Date/Time:</b> <span class="datetime"></span></p>
+    <p><b>Tickets Remaining:</b> <span class="count"></span></p>
+</section>
+<section>
+    <h2>Buy tickets</h2>
+    <form id="purchase-form">
+        <span>
+            <label for="count"><b>No. of tickets:</b></label>
+            <input type="number" id="count" name="count" class="input number" value="1" min="1" max="999"/>
+        </span>
+        <input type="submit" class="button join-queue" value="Queue to purchase"/>
+    </form>
+</section>
+<section>
+    <!-- This element shows the user their position in the queue once they have joined. -->
+    <h2>Queue</h2>
+    <div class="queue-container">
+        <div class="queue-info">
+            <p>
+                <b>Request ID:</b> <span class="request-id">N/A</span>
+            </p>
+            <p>
+                <b>Queue position:</b> <span class="position">Not in queue</span>
+            </p>
+        </div>
+        <div>
+            <button class="button danger cancel" disabled>Cancel purchase request</button>
+        </div>
+    </div>
+</section>
+<section>
+    <h2>My Tickets</h2>
+    <ul id="ticket-list"></ul>
+</section>
+<footer>
+    <p>Ticket Chief Purchasing System</p>
+</footer>
+</body>
+</html>

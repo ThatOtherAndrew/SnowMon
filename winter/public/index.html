@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SnowMon</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=Jaini&family=IM+Fell+English&display=swap" rel="stylesheet" />
     <style>
         body {
             margin: 0;
@@ -26,13 +29,219 @@
         #glCanvas {
             z-index: 0;
         }
+
+        /* Modal styles */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-backdrop.hidden {
+            display: none;
+        }
+
+        .modal {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            max-width: 1000px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 2px solid #e5e5e5;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: #1a1a1a;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: color 0.2s, background-color 0.2s;
+        }
+
+        .close-button:hover {
+            background-color: #f5f5f5;
+        }
+
+        .modal-body {
+            font-size: larger;
+            padding: 1.5rem;
+            color: #1a1a1a;
+            line-height: 1.6;
+        }
+
+        .modal-body p {
+            margin-bottom: 1rem;
+        }
+
+        .modal-body li {
+            margin-bottom: 1rem;
+        }
+
+        .banner {
+            background-image: url('https://siege.hackclub.com/assets/scroll-aca243bf.webp');
+            background-position: center;
+            background-size: 150%;
+            border-left: 4px solid #3b2a1a;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .banner-logo {
+            width: 64px;
+            height: 64px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+
+        .banner-content {
+            flex: 1;
+        }
+
+        .banner h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.8rem;
+            font-weight: 600;
+            font-family: 'Jaini', cursive;
+            color: #3b2a1a;
+        }
+
+        .banner p {
+            margin: 0;
+            font-size: 1.2rem;
+            font-family: 'IM Fell English', serif;
+            color: #3b2a1a;
+        }
+
+        .banner a {
+            color: #3b2a1a;
+        }
     </style>
 </head>
 <body>
     <canvas id="glCanvas"></canvas>
     <canvas id="overlayCanvas"></canvas>
 
+    <!-- Welcome Modal -->
+    <div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" tabindex="-1">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Welcome to SnowMon!</h2>
+                <button class="close-button" id="closeModalBtn" aria-label="Close">×</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="banner">
+                    <img src="https://siege.hackclub.com/assets/logo-55998110.webp" alt="Siege logo" class="banner-logo" />
+                    <div class="banner-content">
+                        <h3>Reviewing for Siege?</h3>
+                        <p>Feel free to <a href="https://hackclub.slack.com/team/U074K2VPP62">message me on Slack</a> if you have any questions or issues :D</p>
+                    </div>
+                </div>
+
+                <h2>About</h2>
+
+                <p>
+                    <b>SnowMon</b> is a silly little resource monitor which shows you the current RAM usage of the
+                    server as a snowstorm.
+                </p>
+
+                <p>
+                    It's built upon an <b>entirely custom HTTP server made from scratch</b>, which was written with
+                    <b>zero AI assistance</b> and <b>zero libraries</b>. (Yes, that means freakishly parsing HTTP
+                    headers - and even JSON - in Java regex!)
+                </p>
+
+                <h2>Try it out!</h2>
+
+                <p>
+                    For the purposes of this demo, I've put together <b>Ticket Chief</b>, a mock ticket purchase
+                    platform with a queueing system for purchases, where each pending purchase takes up 512MB of RAM.
+                    (Very realistic, I know)
+                </p>
+
+                <p>See it in action for yourself:</p>
+
+                <ol>
+                    <li>Open <a href="/ticketchief" target="_blank">/ticketchief</a> in a new tab</li>
+                    <li>Drag the new tab side-by-side beside this one</li>
+                    <li>Queue to purchase a ticket</li>
+                    <li>Watch the blizzard intensify as you wait in the queue, then die down again afterwards!</li>
+                    <li>You can even try getting multiple tabs/devices/friends to join the queue simultaneously!</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Modal functionality
+        const modalBackdrop = document.getElementById('modalBackdrop');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+
+        function closeModal() {
+            modalBackdrop.classList.add('hidden');
+        }
+
+        function openModal() {
+            modalBackdrop.classList.remove('hidden');
+        }
+
+        // Close on button click
+        closeModalBtn.addEventListener('click', closeModal);
+
+        // Close on backdrop click
+        modalBackdrop.addEventListener('click', (event) => {
+            if (event.target === modalBackdrop) {
+                closeModal();
+            }
+        });
+
+        // Close on Escape key
+        window.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !modalBackdrop.classList.contains('hidden')) {
+                closeModal();
+            }
+        });
+
+        // Expose openModal globally
+        window.openModal = openModal;
+
         // Vertex shader - simple pass-through shader that covers the entire screen
         const vertexShaderSource = `
             attribute vec2 a_position;
@@ -455,6 +664,10 @@
         window.addEventListener('DOMContentLoaded', () => {
             init();
             initBlizzard();
+            fetch('/snowmon').then(response => response.json().then(data => {
+                blizzardSettings.blizzardFactor = data['memoryUsage'];
+                blizzardSettings._targetBlizzardFactor = data['memoryUsage'];
+            }));
             setInterval(async () => {
                 const response = await fetch('/snowmon');
                 const data = await response.json();

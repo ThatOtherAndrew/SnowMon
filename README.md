@@ -1,11 +1,13 @@
-# TicketChief
+# SnowMon
+
+A simple demo of a snowy forest which indicates current RAM usage with the intensity of a snowstorm.
+
+Built upon an **entirely self-made HTTP server from scratch**, using **no third-party libraries**.
 
 ## Build and run
 
-Hi, marker! To hopefully save you a bit of a hassle, here's how to build and run the code in this submission:
-
 ```shell
-cd part1/  # or part2/, or part3/
+cd winter/
 javac -d out src/**/*.java  # compile
 java -cp out Main # run
 ```

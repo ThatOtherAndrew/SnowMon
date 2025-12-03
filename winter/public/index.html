@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SnowMon</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="glCanvas"></canvas>
+
+    <script>
+        // Vertex shader - simple pass-through shader that covers the entire screen
+        const vertexShaderSource = `
+            attribute vec2 a_position;
+            void main() {
+                gl_Position = vec4(a_position, 0.0, 1.0);
+            }
+        `;
+
+        // Fragment shader wrapper for ShaderToy shaders
+        const fragmentShaderPrefix = `
+            #ifdef GL_ES
+            precision highp float;
+            #endif
+
+            #extension GL_OES_standard_derivatives : enable
+
+            uniform vec2 iResolution;
+            uniform float iTime;
+            uniform vec4 iMouse;
+            uniform int iFrame;
+
+            // ShaderToy mainImage function will be inserted here
+        `;
+
+        const fragmentShaderSuffix = `
+            void main() {
+                mainImage(gl_FragColor, gl_FragCoord.xy);
+            }
+        `;
+
+        // Initialise WebGL
+        async function init() {
+            const canvas = document.getElementById('glCanvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+            if (!gl) {
+                alert('WebGL not supported');
+                return;
+            }
+
+            // Enable required extensions
+            const ext = gl.getExtension('OES_standard_derivatives');
+            if (!ext) {
+                console.warn('OES_standard_derivatives extension not available');
+            }
+
+            // Load the ShaderToy shader
+            let shaderToyCode;
+            try {
+                const response = await fetch('shaders/overthemoon.frag');
+                shaderToyCode = await response.text();
+            } catch (error) {
+                console.error('Failed to load shader:', error);
+                return;
+            }
+
+            // Combine the shader parts
+            const fragmentShaderSource = fragmentShaderPrefix + shaderToyCode + fragmentShaderSuffix;
+
+            // Create and compile shaders
+            function createShader(gl, type, source) {
+                const shader = gl.createShader(type);
+                gl.shaderSource(shader, source);
+                gl.compileShader(shader);
+
+                if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                    console.error('Shader compilation error:', gl.getShaderInfoLog(shader));
+                    gl.deleteShader(shader);
+                    return null;
+                }
+
+                return shader;
+            }
+
+            const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+            const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+
+            if (!vertexShader || !fragmentShader) {
+                console.error('Failed to create shaders');
+                return;
+            }
+
+            // Create shader programme
+            const programme = gl.createProgram();
+            gl.attachShader(programme, vertexShader);
+            gl.attachShader(programme, fragmentShader);
+            gl.linkProgram(programme);
+
+            if (!gl.getProgramParameter(programme, gl.LINK_STATUS)) {
+                console.error('Programme linking error:', gl.getProgramInfoLog(programme));
+                return;
+            }
+
+            // Set up geometry (full-screen quad)
+            const vertices = new Float32Array([
+                -1.0, -1.0,
+                 1.0, -1.0,
+                -1.0,  1.0,
+                 1.0,  1.0,
+            ]);
+
+            const buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+            const positionLocation = gl.getAttribLocation(programme, 'a_position');
+            gl.enableVertexAttribArray(positionLocation);
+            gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+            // Get uniform locations
+            const uniformLocations = {
+                iResolution: gl.getUniformLocation(programme, 'iResolution'),
+                iTime: gl.getUniformLocation(programme, 'iTime'),
+                iMouse: gl.getUniformLocation(programme, 'iMouse'),
+                iFrame: gl.getUniformLocation(programme, 'iFrame')
+            };
+
+            // Mouse tracking
+            let mouseX = 0, mouseY = 0;
+            let mousePressed = false;
+
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                // Scale mouse coordinates to canvas resolution
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                mouseX = (e.clientX - rect.left) * scaleX;
+                mouseY = canvas.height - ((e.clientY - rect.top) * scaleY); // Flip Y coordinate
+            });
+
+            canvas.addEventListener('mousedown', () => mousePressed = true);
+            canvas.addEventListener('mouseup', () => mousePressed = false);
+
+            // Resize handler - fills entire screen
+            function resize() {
+                // Set canvas to fill the entire window
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+
+                // Update WebGL viewport
+                gl.viewport(0, 0, canvas.width, canvas.height);
+            }
+
+            window.addEventListener('resize', resize);
+            resize();
+
+            // Animation loop
+            let startTime = Date.now();
+            let frame = 0;
+
+            function render() {
+                const currentTime = (Date.now() - startTime) / 1000.0;
+
+                gl.useProgram(programme);
+
+                // Calculate virtual resolution that maintains 16:9 aspect ratio
+                const targetAspect = 16.0 / 9.0;
+                const canvasAspect = canvas.width / canvas.height;
+
+                let virtualWidth, virtualHeight;
+                if (canvasAspect > targetAspect) {
+                    // Canvas is wider - use full height, adjust width
+                    virtualHeight = canvas.height;
+                    virtualWidth = virtualHeight * targetAspect;
+                } else {
+                    // Canvas is taller - use full width, adjust height
+                    virtualWidth = canvas.width;
+                    virtualHeight = virtualWidth / targetAspect;
+                }
+
+                // Set uniforms - pass virtual resolution instead of actual canvas size
+                gl.uniform2f(uniformLocations.iResolution, virtualWidth, virtualHeight);
+                gl.uniform1f(uniformLocations.iTime, currentTime);
+                gl.uniform4f(uniformLocations.iMouse, mouseX, mouseY, mousePressed ? 1.0 : 0.0, 0.0);
+                gl.uniform1i(uniformLocations.iFrame, frame);
+
+                // Draw
+                gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+                frame++;
+                requestAnimationFrame(render);
+            }
+
+            render();
+        }
+
+        // Start when DOM is loaded
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

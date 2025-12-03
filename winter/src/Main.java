@@ -77,7 +77,7 @@ public class Main {
                     "memoryUsage": %f
                 }
                 """.trim(),
-                1. - ((double) Runtime.getRuntime().freeMemory() / Runtime.getRuntime().totalMemory())
+                (double) (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / Runtime.getRuntime().maxMemory()
             )
         ));
     }

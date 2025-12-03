@@ -11,12 +11,17 @@ public class PurchaseRequest {
     
     // dead weight
     @SuppressWarnings({"unused", "FieldCanBeLocal"})
-    private byte[] ballast = new byte[512 * 1024 * 1024];
+    private byte[] ballast;
 
     public PurchaseRequest(int id, int eventId, int ticketCount) {
         this.id = id;
         this.eventId = eventId;
         this.ticketCount = ticketCount;
+        try {
+            this.ballast = new byte[512 * 1024 * 1024];
+        } catch (OutOfMemoryError e) {
+            this.ballast = new byte[0];
+        }
     }
 
     public void dropBallast() {

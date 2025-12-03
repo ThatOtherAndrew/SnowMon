@@ -53,13 +53,16 @@
             uniform float iTime;
             uniform vec4 iMouse;
             uniform int iFrame;
+            uniform vec2 uCoordOffset;  // Offset for CSS cover behaviour
 
             // ShaderToy mainImage function will be inserted here
         `;
 
         const fragmentShaderSuffix = `
             void main() {
-                mainImage(gl_FragColor, gl_FragCoord.xy);
+                // Apply offset to achieve CSS cover behaviour (fill and crop)
+                vec2 adjustedCoord = gl_FragCoord.xy + uCoordOffset;
+                mainImage(gl_FragColor, adjustedCoord);
             }
         `;
 
@@ -147,7 +150,8 @@
                 iResolution: gl.getUniformLocation(programme, 'iResolution'),
                 iTime: gl.getUniformLocation(programme, 'iTime'),
                 iMouse: gl.getUniformLocation(programme, 'iMouse'),
-                iFrame: gl.getUniformLocation(programme, 'iFrame')
+                iFrame: gl.getUniformLocation(programme, 'iFrame'),
+                uCoordOffset: gl.getUniformLocation(programme, 'uCoordOffset')
             };
 
             // Mouse tracking
@@ -188,23 +192,31 @@
 
                 gl.useProgram(programme);
 
-                // Calculate virtual resolution that maintains 16:9 aspect ratio
+                // Calculate virtual resolution for CSS "cover" behaviour
+                // The shader content should fill the screen and crop overflow
                 const targetAspect = 16.0 / 9.0;
                 const canvasAspect = canvas.width / canvas.height;
 
                 let virtualWidth, virtualHeight;
+                let offsetX = 0, offsetY = 0;
+
                 if (canvasAspect > targetAspect) {
-                    // Canvas is wider - use full height, adjust width
-                    virtualHeight = canvas.height;
-                    virtualWidth = virtualHeight * targetAspect;
-                } else {
-                    // Canvas is taller - use full width, adjust height
+                    // Canvas is wider than 16:9 - scale based on WIDTH, crop top/bottom
                     virtualWidth = canvas.width;
-                    virtualHeight = virtualWidth / targetAspect;
+                    virtualHeight = canvas.width / targetAspect;
+                    // Center vertically (content overflows equally top and bottom)
+                    offsetY = (virtualHeight - canvas.height) / 2;
+                } else {
+                    // Canvas is taller than 16:9 - scale based on HEIGHT, crop left/right
+                    virtualHeight = canvas.height;
+                    virtualWidth = canvas.height * targetAspect;
+                    // Center horizontally (content overflows equally left and right)
+                    offsetX = (virtualWidth - canvas.width) / 2;
                 }
 
-                // Set uniforms - pass virtual resolution instead of actual canvas size
+                // Set uniforms
                 gl.uniform2f(uniformLocations.iResolution, virtualWidth, virtualHeight);
+                gl.uniform2f(uniformLocations.uCoordOffset, offsetX, offsetY);
                 gl.uniform1f(uniformLocations.iTime, currentTime);
                 gl.uniform4f(uniformLocations.iMouse, mouseX, mouseY, mousePressed ? 1.0 : 0.0, 0.0);
                 gl.uniform1i(uniformLocations.iFrame, frame);
@@ -259,6 +271,7 @@
             #endif
 
             uniform vec2 iResolution;
+            uniform vec2 uCoordOffset;
             uniform float iTime;
             uniform float uSnowflakeAmount;
             uniform float uBlizzardFactor;
@@ -277,7 +290,9 @@
 
             void main()
             {
-                uv = gl_FragCoord.xy / iResolution.x;
+                // Apply offset for CSS cover behaviour
+                vec2 adjustedCoord = gl_FragCoord.xy + uCoordOffset;
+                uv = adjustedCoord / iResolution.x;
 
                 float j;
                 int snowflakeCount = int(uSnowflakeAmount);
@@ -370,6 +385,7 @@
             // Get uniform locations
             const uniformLocations = {
                 iResolution: gl.getUniformLocation(programme, 'iResolution'),
+                uCoordOffset: gl.getUniformLocation(programme, 'uCoordOffset'),
                 iTime: gl.getUniformLocation(programme, 'iTime'),
                 uSnowflakeAmount: gl.getUniformLocation(programme, 'uSnowflakeAmount'),
                 uBlizzardFactor: gl.getUniformLocation(programme, 'uBlizzardFactor')
@@ -396,8 +412,28 @@
 
                 gl.useProgram(programme);
 
+                // Calculate virtual resolution for CSS "cover" behaviour
+                const targetAspect = 16.0 / 9.0;
+                const canvasAspect = canvas.width / canvas.height;
+
+                let virtualWidth, virtualHeight;
+                let offsetX = 0, offsetY = 0;
+
+                if (canvasAspect > targetAspect) {
+                    // Canvas is wider than 16:9 - scale based on WIDTH
+                    virtualWidth = canvas.width;
+                    virtualHeight = canvas.width / targetAspect;
+                    offsetY = (virtualHeight - canvas.height) / 2;
+                } else {
+                    // Canvas is taller than 16:9 - scale based on HEIGHT
+                    virtualHeight = canvas.height;
+                    virtualWidth = canvas.height * targetAspect;
+                    offsetX = (virtualWidth - canvas.width) / 2;
+                }
+
                 // Set uniforms
-                gl.uniform2f(uniformLocations.iResolution, canvas.width, canvas.height);
+                gl.uniform2f(uniformLocations.iResolution, virtualWidth, virtualHeight);
+                gl.uniform2f(uniformLocations.uCoordOffset, offsetX, offsetY);
                 gl.uniform1f(uniformLocations.iTime, currentTime);
                 gl.uniform1f(uniformLocations.uSnowflakeAmount, blizzardSettings.snowflakeAmount);
                 gl.uniform1f(uniformLocations.uBlizzardFactor, blizzardSettings.blizzardFactor);

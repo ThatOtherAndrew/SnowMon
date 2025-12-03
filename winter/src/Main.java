@@ -56,6 +56,7 @@ public class Main {
 
         // init server
         HTTPServer server = new HTTPServer(documentRoot);
+        registerSnowMonRoutes(server);
         registerTicketChiefRoutes(server, new PurchaseManager(events));
 
         try {
@@ -63,6 +64,22 @@ public class Main {
         } catch (Exception e) {
             System.err.printf("Fatal server error: %s: %s%n", e.getClass().getName(), e.getMessage());
         }
+    }
+
+    public static void registerSnowMonRoutes(HTTPServer server) {
+        // GET /snowmon
+        server.route("GET", "/snowmon", request -> new Response(
+            200,
+            Map.of("Content-Type", "application/json"),
+            String.format(
+                """
+                {
+                    "memoryUsage": %f
+                }
+                """.trim(),
+                1. - ((double) Runtime.getRuntime().freeMemory() / Runtime.getRuntime().totalMemory())
+            )
+        ));
     }
 
     private static void registerTicketChiefRoutes(HTTPServer server, PurchaseManager purchaseManager) {

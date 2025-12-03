@@ -8,6 +8,10 @@ public class PurchaseRequest {
     private final int eventId;
     private final int ticketCount;
     private final List<String> ticketIds = new ArrayList<>();
+    
+    // dead weight
+    @SuppressWarnings("unused")
+    private final byte[] ballast = new byte[512 * 1024 * 1024];
 
     public PurchaseRequest(int id, int eventId, int ticketCount) {
         this.id = id;

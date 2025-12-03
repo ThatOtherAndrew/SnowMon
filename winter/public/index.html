@@ -457,7 +457,9 @@
             snowflakeAmount: 150,
             blizzardFactor: 0,
             _targetBlizzardFactor: 0,
-            lerpSpeed: 0.02  // How fast to interpolate (0-1, higher = faster)
+            lerpSpeed: 0.02,  // How fast to interpolate (0-1, higher = faster)
+            blizzardTime: 0,  // Accumulated time for snowflake movement (prevents jumps)
+            lastFrameTime: null  // For delta time calculation
         };
 
         // Setter for blizzardFactor that sets the target instead
@@ -494,6 +496,7 @@
             uniform float iTime;
             uniform float uSnowflakeAmount;
             uniform float uBlizzardFactor;
+            uniform float uBlizzardTime;  // Pre-accumulated time to prevent jumps
 
             vec2 uv;
 
@@ -522,7 +525,8 @@
 
                     j = float(i);
                     float speed = 0.3+rnd(cos(j))*(0.7+0.5*cos(j/(uSnowflakeAmount*0.25)));
-                    vec2 center = vec2((0.25-uv.y)*(uBlizzardFactor*.5)+rnd(j)+0.1*cos(iTime+sin(j)), mod(sin(j)-speed*(iTime*1.5*(0.1+uBlizzardFactor)), 0.65));
+                    // Use pre-accumulated blizzardTime instead of iTime*factor to prevent jumps
+                    vec2 center = vec2((0.25-uv.y)*(uBlizzardFactor*.5)+rnd(j)+0.1*cos(iTime+sin(j)), mod(sin(j)-speed*uBlizzardTime*1.5, 0.65));
 
                     // Draw white snowflakes with transparency
                     float circle = drawCircle(center, 0.001+speed*0.012);
@@ -607,7 +611,8 @@
                 uCoordOffset: gl.getUniformLocation(programme, 'uCoordOffset'),
                 iTime: gl.getUniformLocation(programme, 'iTime'),
                 uSnowflakeAmount: gl.getUniformLocation(programme, 'uSnowflakeAmount'),
-                uBlizzardFactor: gl.getUniformLocation(programme, 'uBlizzardFactor')
+                uBlizzardFactor: gl.getUniformLocation(programme, 'uBlizzardFactor'),
+                uBlizzardTime: gl.getUniformLocation(programme, 'uBlizzardTime')
             };
 
             // Resize handler
@@ -624,10 +629,22 @@
             let startTime = Date.now();
 
             function render() {
-                const currentTime = (Date.now() - startTime) / 1000.0;
+                const now = Date.now();
+                const currentTime = (now - startTime) / 1000.0;
+
+                // Calculate delta time for blizzard time accumulation
+                if (blizzardSettings.lastFrameTime === null) {
+                    blizzardSettings.lastFrameTime = now;
+                }
+                const deltaTime = (now - blizzardSettings.lastFrameTime) / 1000.0;
+                blizzardSettings.lastFrameTime = now;
 
                 // Smoothly interpolate blizzard factor towards target
                 updateBlizzardInterpolation();
+
+                // Accumulate blizzard time based on current factor
+                // This prevents snowflake position jumps when factor changes
+                blizzardSettings.blizzardTime += deltaTime * (0.1 + blizzardSettings.blizzardFactor);
 
                 gl.useProgram(programme);
 
@@ -656,6 +673,7 @@
                 gl.uniform1f(uniformLocations.iTime, currentTime);
                 gl.uniform1f(uniformLocations.uSnowflakeAmount, blizzardSettings.snowflakeAmount);
                 gl.uniform1f(uniformLocations.uBlizzardFactor, blizzardSettings.blizzardFactor);
+                gl.uniform1f(uniformLocations.uBlizzardTime, blizzardSettings.blizzardTime);
 
                 // Clear with transparent background
                 gl.clearColor(0.0, 0.0, 0.0, 0.0);

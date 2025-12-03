@@ -223,9 +223,31 @@
 
         // Blizzard overlay settings
         const blizzardSettings = {
-            snowflakeAmount: 200,
-            blizzardFactor: 0.1
+            snowflakeAmount: 150,
+            blizzardFactor: 0,
+            _targetBlizzardFactor: 0,
+            lerpSpeed: 0.02  // How fast to interpolate (0-1, higher = faster)
         };
+
+        // Setter for blizzardFactor that sets the target instead
+        Object.defineProperty(blizzardSettings, 'targetBlizzardFactor', {
+            set: function(value) {
+                this._targetBlizzardFactor = value;
+            },
+            get: function() {
+                return this._targetBlizzardFactor;
+            }
+        });
+
+        // Interpolation function - call this each frame
+        function updateBlizzardInterpolation() {
+            const diff = blizzardSettings._targetBlizzardFactor - blizzardSettings.blizzardFactor;
+            if (Math.abs(diff) > 0.001) {
+                blizzardSettings.blizzardFactor += diff * blizzardSettings.lerpSpeed;
+            } else {
+                blizzardSettings.blizzardFactor = blizzardSettings._targetBlizzardFactor;
+            }
+        }
 
         // Expose settings globally for easy control
         window.blizzardSettings = blizzardSettings;
@@ -266,7 +288,7 @@
 
                     j = float(i);
                     float speed = 0.3+rnd(cos(j))*(0.7+0.5*cos(j/(uSnowflakeAmount*0.25)));
-                    vec2 center = vec2((0.25-uv.y)*uBlizzardFactor+rnd(j)+0.1*cos(iTime+sin(j)), mod(sin(j)-speed*(iTime*1.5*(0.1+uBlizzardFactor)), 0.65));
+                    vec2 center = vec2((0.25-uv.y)*(uBlizzardFactor*.5)+rnd(j)+0.1*cos(iTime+sin(j)), mod(sin(j)-speed*(iTime*1.5*(0.1+uBlizzardFactor)), 0.65));
 
                     // Draw white snowflakes with transparency
                     float circle = drawCircle(center, 0.001+speed*0.012);
@@ -369,6 +391,9 @@
             function render() {
                 const currentTime = (Date.now() - startTime) / 1000.0;
 
+                // Smoothly interpolate blizzard factor towards target
+                updateBlizzardInterpolation();
+
                 gl.useProgram(programme);
 
                 // Set uniforms
@@ -394,11 +419,12 @@
         window.addEventListener('DOMContentLoaded', () => {
             init();
             initBlizzard();
-
-            // Log instructions for controlling blizzard
-            console.log('Control blizzard settings:');
-            console.log('  blizzardSettings.snowflakeAmount = 100; // Change snowflake count (0-1000)');
-            console.log('  blizzardSettings.blizzardFactor = 0.5;  // Change wind strength (0-1)');
+            setInterval(async () => {
+                const response = await fetch('/snowmon');
+                const data = await response.json();
+                // Set target for smooth interpolation
+                blizzardSettings.targetBlizzardFactor = data['memoryUsage'];
+            }, 3000);
         });
     </script>
 </body>

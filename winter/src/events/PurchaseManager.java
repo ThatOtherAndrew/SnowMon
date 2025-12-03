@@ -163,6 +163,9 @@ public class PurchaseManager {
 
         // register the purchase
         purchased.add(requestId);
+        // free up artificially inflated memory usage (lol)
+        request.dropBallast();
+        System.gc();
     }
 
     public PurchaseRequest getPurchaseRequest(int requestId) {
@@ -188,6 +191,9 @@ public class PurchaseManager {
 
         queue.remove(requestId);
         requests.remove(requestId);
+        // free up artificially inflated memory usage (lol)
+        request.dropBallast();
+        System.gc();
         return true;
     }
 

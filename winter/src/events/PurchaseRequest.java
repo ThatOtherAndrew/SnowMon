@@ -10,13 +10,17 @@ public class PurchaseRequest {
     private final List<String> ticketIds = new ArrayList<>();
     
     // dead weight
-    @SuppressWarnings("unused")
-    private final byte[] ballast = new byte[512 * 1024 * 1024];
+    @SuppressWarnings({"unused", "FieldCanBeLocal"})
+    private byte[] ballast = new byte[512 * 1024 * 1024];
 
     public PurchaseRequest(int id, int eventId, int ticketCount) {
         this.id = id;
         this.eventId = eventId;
         this.ticketCount = ticketCount;
+    }
+
+    public void dropBallast() {
+        this.ballast = null;
     }
 
     public void addTicketId(String ticketId) {

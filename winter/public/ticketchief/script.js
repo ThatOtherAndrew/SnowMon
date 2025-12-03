@@ -16,7 +16,7 @@ function generateNonce() {
 }
 
 async function fetchEvents() {
-    const response = await fetch('/tickets', {'headers': {'Content-Type': 'application/json'}});
+    const response = await fetch('/ticketchief/tickets', {'headers': {'Content-Type': 'application/json'}});
     events.push(...(await response.json()));
 
     const select = document.getElementById('concert-select');
@@ -43,7 +43,7 @@ async function purchaseTickets(event) {
 
 
     const ticketCount = document.getElementById('count').valueAsNumber;
-    const response = await fetch('/queue', {
+    const response = await fetch('/ticketchief/queue', {
         method: 'POST',
         headers: {
             'Accept': 'application/json',
@@ -73,7 +73,7 @@ async function purchaseTickets(event) {
 
 async function cancelTickets() {
     const requestId = document.querySelector('.request-id').innerText.trim();
-    const response = await fetch(`/queue/${requestId}`, {
+    const response = await fetch(`/ticketchief/queue/${requestId}`, {
         method: 'DELETE',
         headers: {'X-Nonce': generateNonce()},
     });
@@ -97,7 +97,7 @@ async function refundTicket(event) {
     const ticketElement = event.target.closest('.ticket');
     const eventId = ticketElement.querySelector('.event-id').innerText;
     const ticketId = ticketElement.querySelector('.ticket-id').innerText;
-    const response = await fetch(`/tickets/${eventId}/refund`, {
+    const response = await fetch(`/ticketchief/tickets/${eventId}/refund`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -169,7 +169,7 @@ async function watchQueue(location) {
 }
 
 async function updateTicketInfo() {
-    const response = await fetch(`/tickets/${currentEventId}`, {
+    const response = await fetch(`/ticketchief/tickets/${currentEventId}`, {
         headers: {'Accept': 'application/json'},
     });
     const json = await response.json();

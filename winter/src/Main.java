@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class TicketChief {
+public class Main {
     private static final Pattern PURCHASE_JSON_PATTERN = Pattern.compile(
         "\\s*\\{"
         + "\\s*\"eventId\"\\s*:\\s*(?<eventId>\\d+)\\s*,\\s*"
@@ -56,7 +56,7 @@ public class TicketChief {
 
         // init server
         HTTPServer server = new HTTPServer(documentRoot);
-        registerRoutes(server, new PurchaseManager(events));
+        registerTicketChiefRoutes(server, new PurchaseManager(events));
 
         try {
             server.start(port);
@@ -65,19 +65,19 @@ public class TicketChief {
         }
     }
 
-    private static void registerRoutes(HTTPServer server, PurchaseManager purchaseManager) {
+    private static void registerTicketChiefRoutes(HTTPServer server, PurchaseManager purchaseManager) {
         // Nonce manager for replay attack prevention (Part 3 security)
         NonceManager nonceManager = new NonceManager();
 
-        // GET /tickets
-        server.route("GET", "/tickets", request -> new Response(
+        // GET /ticketchief/tickets
+        server.route("GET", "/ticketchief/tickets", request -> new Response(
             200,
             Map.of("Content-Type", "application/json"),
             purchaseManager.getEventsAsJson()
         ));
 
-        // GET /tickets/:id
-        server.route("GET", "/tickets/:id", request -> {
+        // GET /ticketchief/tickets/:id
+        server.route("GET", "/ticketchief/tickets/:id", request -> {
             if (!"application/json".equals(request.headers().get("Accept"))) {
                 return Response.HttpCatResponse(406); // Not Acceptable
             }
@@ -93,8 +93,8 @@ public class TicketChief {
             }
         });
 
-        // POST /tickets/:id/refund
-        server.route("POST", "/tickets/:id/refund", request -> {
+        // POST /ticketchief/tickets/:id/refund
+        server.route("POST", "/ticketchief/tickets/:id/refund", request -> {
             // Validate nonce for replay attack prevention
             if (!nonceManager.validateNonce(request.headers().get("X-Nonce"))) {
                 return Response.HttpCatResponse(400); // Bad Request (missing or reused nonce)
@@ -130,8 +130,8 @@ public class TicketChief {
             return Response.HttpCatResponse(204); // No Content
         });
 
-        // POST /queue
-        server.route("POST", "/queue", request -> {
+        // POST /ticketchief/queue
+        server.route("POST", "/ticketchief/queue", request -> {
             // Validate nonce for replay attack prevention
             if (!nonceManager.validateNonce(request.headers().get("X-Nonce"))) {
                 return Response.HttpCatResponse(400); // Bad Request (missing or reused nonce)
@@ -166,7 +166,7 @@ public class TicketChief {
 
             return new Response(
                 201,
-                Map.of("Content-Type", "application/json", "Location", "/queue/" + requestId),
+                Map.of("Content-Type", "application/json", "Location", "/ticketchief/queue/" + requestId),
                 String.format(
                     """
                     {
@@ -178,8 +178,8 @@ public class TicketChief {
             );
         });
 
-        // GET /queue/:id
-        server.route("GET", "/queue/:id", request -> {
+        // GET /ticketchief/queue/:id
+        server.route("GET", "/ticketchief/queue/:id", request -> {
             if (!"application/json".equals(request.headers().get("Accept"))) {
                 return Response.HttpCatResponse(406); // Not Acceptable
             }
@@ -199,8 +199,8 @@ public class TicketChief {
             return new Response(200, Map.of("Content-Type", "application/json"), requestStatus);
         });
 
-        // DELETE /queue/:id
-        server.route("DELETE", "/queue/:id", request -> {
+        // DELETE /ticketchief/queue/:id
+        server.route("DELETE", "/ticketchief/queue/:id", request -> {
             // Validate nonce for replay attack prevention
             if (!nonceManager.validateNonce(request.headers().get("X-Nonce"))) {
                 return Response.HttpCatResponse(400); // Bad Request (missing or reused nonce)

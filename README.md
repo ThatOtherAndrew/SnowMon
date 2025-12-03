@@ -7,7 +7,7 @@ Hi, marker! To hopefully save you a bit of a hassle, here's how to build and run
 ```shell
 cd part1/  # or part2/, or part3/
 javac -d out src/**/*.java  # compile
-java -cp out TicketChief # run
+java -cp out Main # run
 ```
 
 Then, open in a browser (port 8000 by default):

@@ -117,14 +117,14 @@ public class HTTPServer {
     }
 
     protected Response defaultRoute(Request request) {
-        // redirect root requests to index.html
-        String path = request.path();
-        if (request.path().equals("/")) {
-            path = "/index.html";
+        // try to serve from document root
+        Path filePath = Paths.get(documentRoot.toString(), request.path());
+
+        // redirect to index.html if directory
+        if (Files.isDirectory(filePath)) {
+            filePath = Paths.get(filePath.toString(), "index.html");
         }
 
-        // try to serve from document root
-        Path filePath = Paths.get(documentRoot.toString(), path);
         if (Files.isRegularFile(filePath) && Files.isReadable(filePath)) {
             try {
                 String fileContent = Files.readString(filePath);

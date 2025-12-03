@@ -6,8 +6,6 @@ This assignment is an advanced exercise in understanding and implementing the fu
 
 # Design
 
-(Hi marker! I'm running on my second consecutive all-nighter trying to finish off this late coursework once and for all, so I apologise in advance for the absolute behemoth textwall below and hope that it's coherent enough for you to make sense of. Also please don't tell me if I've accidentally left a todo message somewhere because I will probably cry.)
-
 ## Part 1
 
 ### Backend

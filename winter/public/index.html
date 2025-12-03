@@ -15,11 +15,22 @@
             display: block;
             width: 100vw;
             height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #overlayCanvas {
+            pointer-events: none; /* Allow mouse events to pass through to main canvas */
+            z-index: 1;
+        }
+        #glCanvas {
+            z-index: 0;
         }
     </style>
 </head>
 <body>
     <canvas id="glCanvas"></canvas>
+    <canvas id="overlayCanvas"></canvas>
 
     <script>
         // Vertex shader - simple pass-through shader that covers the entire screen
@@ -210,8 +221,185 @@
             render();
         }
 
+        // Blizzard overlay settings
+        const blizzardSettings = {
+            snowflakeAmount: 200,
+            blizzardFactor: 0.1
+        };
+
+        // Expose settings globally for easy control
+        window.blizzardSettings = blizzardSettings;
+
+        // Blizzard overlay shader with uniforms
+        const blizzardFragmentShader = `
+            #ifdef GL_ES
+            precision highp float;
+            #endif
+
+            uniform vec2 iResolution;
+            uniform float iTime;
+            uniform float uSnowflakeAmount;
+            uniform float uBlizzardFactor;
+
+            vec2 uv;
+
+            float rnd(float x)
+            {
+                return fract(sin(dot(vec2(x+47.49,38.2467/(x+2.3)), vec2(12.9898, 78.233)))* (43758.5453));
+            }
+
+            float drawCircle(vec2 center, float radius)
+            {
+                return 1.0 - smoothstep(0.0, radius, length(uv - center));
+            }
+
+            void main()
+            {
+                uv = gl_FragCoord.xy / iResolution.x;
+
+                float j;
+                int snowflakeCount = int(uSnowflakeAmount);
+
+                for(int i = 0; i < 1000; i++)
+                {
+                    if(i >= snowflakeCount) break;
+
+                    j = float(i);
+                    float speed = 0.3+rnd(cos(j))*(0.7+0.5*cos(j/(uSnowflakeAmount*0.25)));
+                    vec2 center = vec2((0.25-uv.y)*uBlizzardFactor+rnd(j)+0.1*cos(iTime+sin(j)), mod(sin(j)-speed*(iTime*1.5*(0.1+uBlizzardFactor)), 0.65));
+
+                    // Draw white snowflakes with transparency
+                    float circle = drawCircle(center, 0.001+speed*0.012);
+                    gl_FragColor += vec4(0.9, 0.95, 1.0, circle * 0.5);
+                }
+            }
+        `;
+
+        // Initialise blizzard overlay
+        async function initBlizzard() {
+            const canvas = document.getElementById('overlayCanvas');
+            const gl = canvas.getContext('webgl', {
+                alpha: true,
+                premultipliedAlpha: true
+            }) || canvas.getContext('experimental-webgl', {
+                alpha: true,
+                premultipliedAlpha: false
+            });
+
+            if (!gl) {
+                console.error('WebGL not supported for overlay');
+                return;
+            }
+
+            // Enable blending for transparency
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+            // Create and compile shaders
+            function createShader(gl, type, source) {
+                const shader = gl.createShader(type);
+                gl.shaderSource(shader, source);
+                gl.compileShader(shader);
+
+                if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                    console.error('Blizzard shader compilation error:', gl.getShaderInfoLog(shader));
+                    gl.deleteShader(shader);
+                    return null;
+                }
+
+                return shader;
+            }
+
+            const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+            const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, blizzardFragmentShader);
+
+            if (!vertexShader || !fragmentShader) {
+                console.error('Failed to create blizzard shaders');
+                return;
+            }
+
+            // Create shader programme
+            const programme = gl.createProgram();
+            gl.attachShader(programme, vertexShader);
+            gl.attachShader(programme, fragmentShader);
+            gl.linkProgram(programme);
+
+            if (!gl.getProgramParameter(programme, gl.LINK_STATUS)) {
+                console.error('Blizzard programme linking error:', gl.getProgramInfoLog(programme));
+                return;
+            }
+
+            // Set up geometry (full-screen quad)
+            const vertices = new Float32Array([
+                -1.0, -1.0,
+                 1.0, -1.0,
+                -1.0,  1.0,
+                 1.0,  1.0,
+            ]);
+
+            const buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+            const positionLocation = gl.getAttribLocation(programme, 'a_position');
+            gl.enableVertexAttribArray(positionLocation);
+            gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+            // Get uniform locations
+            const uniformLocations = {
+                iResolution: gl.getUniformLocation(programme, 'iResolution'),
+                iTime: gl.getUniformLocation(programme, 'iTime'),
+                uSnowflakeAmount: gl.getUniformLocation(programme, 'uSnowflakeAmount'),
+                uBlizzardFactor: gl.getUniformLocation(programme, 'uBlizzardFactor')
+            };
+
+            // Resize handler
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                gl.viewport(0, 0, canvas.width, canvas.height);
+            }
+
+            window.addEventListener('resize', resize);
+            resize();
+
+            // Animation loop
+            let startTime = Date.now();
+
+            function render() {
+                const currentTime = (Date.now() - startTime) / 1000.0;
+
+                gl.useProgram(programme);
+
+                // Set uniforms
+                gl.uniform2f(uniformLocations.iResolution, canvas.width, canvas.height);
+                gl.uniform1f(uniformLocations.iTime, currentTime);
+                gl.uniform1f(uniformLocations.uSnowflakeAmount, blizzardSettings.snowflakeAmount);
+                gl.uniform1f(uniformLocations.uBlizzardFactor, blizzardSettings.blizzardFactor);
+
+                // Clear with transparent background
+                gl.clearColor(0.0, 0.0, 0.0, 0.0);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+
+                // Draw
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+                requestAnimationFrame(render);
+            }
+
+            render();
+        }
+
         // Start when DOM is loaded
-        window.addEventListener('DOMContentLoaded', init);
+        window.addEventListener('DOMContentLoaded', () => {
+            init();
+            initBlizzard();
+
+            // Log instructions for controlling blizzard
+            console.log('Control blizzard settings:');
+            console.log('  blizzardSettings.snowflakeAmount = 100; // Change snowflake count (0-1000)');
+            console.log('  blizzardSettings.blizzardFactor = 0.5;  // Change wind strength (0-1)');
+        });
     </script>
 </body>
 </html>

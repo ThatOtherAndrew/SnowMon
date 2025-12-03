@@ -11,6 +11,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -147,7 +148,8 @@ public class HTTPServer {
 
     private Map<String, String> parseHeaders(BufferedReader in) throws BadRequestException, IOException {
         // https://www.rfc-editor.org/rfc/rfc9112.html#name-field-syntax
-        Map<String, String> headers = new HashMap<>();
+        // Use case-insensitive map as HTTP headers are case-insensitive per RFC 7230
+        Map<String, String> headers = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         String line;
         while (!(line = in.readLine().strip()).isEmpty()) {
             String[] parts = line.split(":\\s*", 2);

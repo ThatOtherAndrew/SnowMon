@@ -15,6 +15,6 @@ EXPOSE 8000
 
 # Run from the app directory so it can find cs2003-C3.properties and public/
 # JVM flags for predictable container memory behaviour:
-# - MaxRAMPercentage: Use 75% of container memory as max heap
+# - MaxRAMPercentage: Use 90% of container memory as max heap
 # - InitialRAMPercentage: Start with 50% to reduce early GC fluctuations
-CMD ["java", "-XX:MaxRAMPercentage=75.0", "-XX:InitialRAMPercentage=50.0", "-cp", "out", "Main"]
+CMD ["java", "-XX:MaxRAMPercentage=90.0", "-XX:InitialRAMPercentage=50.0", "-cp", "out", "Main"]

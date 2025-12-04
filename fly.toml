@@ -18,6 +18,6 @@ primary_region = 'lhr'
     h2_backend = false
 
 [[vm]]
-  memory = '1gb'
+  memory = '1.5gb'
   cpu_kind = 'shared'
   cpus = 1

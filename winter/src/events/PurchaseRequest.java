@@ -18,8 +18,9 @@ public class PurchaseRequest {
         this.eventId = eventId;
         this.ticketCount = ticketCount;
         try {
-            this.ballast = new byte[512 * 1024 * 1024];
+            this.ballast = new byte[256 * 1024 * 1024];
         } catch (OutOfMemoryError e) {
+            System.err.println("Failed to allocate ballast!");
             this.ballast = new byte[0];
         }
     }
